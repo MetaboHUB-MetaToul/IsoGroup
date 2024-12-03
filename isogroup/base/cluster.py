@@ -1,3 +1,5 @@
+from typing import List, Union, Iterator, Self
+
 from .feature import Feature
 
 
@@ -9,7 +11,7 @@ class Cluster:
     def __len__(self) -> int:
         return len(self.features)
 
-    def __add__(self, other: Union[Feature, Cluster]):
+    def __add__(self, other: Union[Feature, Self]) -> Self:
         """
         Extend the cluster with either an extra feature or another cluster.
         :param other: Feature or Cluster
@@ -17,7 +19,7 @@ class Cluster:
         """
         pass
 
-    def __iadd__(self, other: Union[Feature, Cluster]):
+    def __iadd__(self, other: Union[Feature, Self]) -> Self:
         """
         Extend the cluster with either an extra feature or another cluster.
         :param other: Feature or Cluster
