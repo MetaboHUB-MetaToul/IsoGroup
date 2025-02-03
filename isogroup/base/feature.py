@@ -21,19 +21,5 @@ class Feature:
                 f"mz={self.mz}, "
                 f"intensity={self.intensity})")
 
-    def __eq__(self, other) -> bool:
-        """
-        Check if two features are equal within given tolerances.
-        :param other: Feature
-        :return: bool
-        """
-        return abs(self.rt - other.rt) < self.rt_tol and abs(
-            self.mz - other.mz) < self.mz_tol
 
 
-    def __hash__(self):
-        """
-        Hash the feature based on its RT and MZ.
-        :return: hash value (int)
-        """
-        return hash((self.rt, self.mz))
