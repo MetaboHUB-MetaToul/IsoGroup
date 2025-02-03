@@ -10,8 +10,3 @@ class Sample:
 
     def initialize_features(self):
         pass
-
-#    @classmethod
-        #    def from_file(cls, path: str, sample_type: str):
-        #dataset = pd.read_csv(path, sep=";")
-        #return cls(dataset, sample_type)

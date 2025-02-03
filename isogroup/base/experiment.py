@@ -24,16 +24,13 @@ class Experiment:
             dummy_feature = Feature(rt=rt, mz=mz, intensity=None)
             annotated_row = [mz, rt, identity, [], []]
             for feature in self.database.features:
-                if ((abs(
-                        float(feature.mz) - dummy_feature.mz) <=
-                     mz_tol and abs(float(feature.rt) - dummy_feature.rt) <=
-                     rt_tol)):
+                if ((abs(float(feature.mz) - dummy_feature.mz) <= mz_tol and
+                     abs(float(feature.rt) - dummy_feature.rt) <= rt_tol)):
                     annotated_row[3].append(feature.metabolite)
                     annotated_row[4].append(feature.isotopologue)
             annotated_row[3] = str(annotated_row[3])
             annotated_row[4] = str(annotated_row[4])
             annotated_index.append(tuple(annotated_row))
-        print(annotated_index)
         self.mz_tol = mz_tol
         self.rt_tol = rt_tol
         self.annotated_experiment = self.experiment.copy(deep=True)
@@ -46,25 +43,8 @@ class Experiment:
         Initialize the samples from the dataset.
         :return:
         """
-        data = self.annotated_experiment if self.annotated_experiment is not None else self.experiment
+        data = self.annotated_experiment if (self.annotated_experiment is not
+                                             None) else self.experiment
         for sample in data.columns:
             self.samples[sample] = Sample(dataset=data[[sample]],
                                           sample_type="test")
-
-
-
-
-if __name__ == "__main__":
-    data = pd.read_csv(
-        r"C:\Users\legregam\PycharmProjects\IsoGroup\data\dataset_test.txt",
-        sep="\t"
-    )
-    data = data.set_index(["mz", "rt", "id"])
-    db_data = pd.read_csv(r"C:\Users\legregam\PycharmProjects\IsoGroup\data"
-                          r"\database_test.csv", sep=";")
-    database = Database(dataset=db_data)
-    experiment = Experiment(dataset=data, database=database)
-    experiment.annotate_experiment(mz_tol=0.01, rt_tol=10)
-    print(experiment.annotated_experiment)
-    experiment.initialize_samples()
-    print(experiment.samples["C12_TP_1"].dataset)

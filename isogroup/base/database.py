@@ -45,11 +45,3 @@ class Database:
                     isotopologue=i
                 )
                 self.features.append(feature)
-                print(feature)
-
-
-
-if __name__ == "__main__":
-    data = pd.read_csv(r"C:\Users\legregam\PycharmProjects\IsoGroup\data"
-                       r"\database_test.csv", sep=";")
-    database = Database(dataset=data)
