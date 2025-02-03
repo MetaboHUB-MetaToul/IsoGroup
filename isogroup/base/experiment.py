@@ -11,7 +11,6 @@ class Experiment:
         self.database = database
         self.samples: dict = {}
         self.annotated_experiment: None | pd.DataFrame = None
-        self.initialize_samples()
         self.mz_tol: None | float = None
         self.rt_tol: None | float = None
 
@@ -47,10 +46,12 @@ class Experiment:
         Initialize the samples from the dataset.
         :return:
         """
-        for sample in self.experiment.columns:
-            self.samples[sample] = Sample(dataset=self.experiment[[sample]],
+        data = self.annotated_experiment if self.annotated_experiment is not None else self.experiment
+        for sample in data.columns:
+            self.samples[sample] = Sample(dataset=data[[sample]],
                                           sample_type="test")
-        print(self.samples)
+
+
 
 
 if __name__ == "__main__":
@@ -65,3 +66,5 @@ if __name__ == "__main__":
     experiment = Experiment(dataset=data, database=database)
     experiment.annotate_experiment(mz_tol=0.01, rt_tol=10)
     print(experiment.annotated_experiment)
+    experiment.initialize_samples()
+    print(experiment.samples["C12_TP_1"].dataset)
