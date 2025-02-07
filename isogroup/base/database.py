@@ -23,6 +23,10 @@ class Database:
 
     def initialize_theoretical_features(self):
 
+        """
+        Creates chemical labelled from isocor functions
+        then initializes the theoretical features from a database file
+        """
         for _, line in self.dataset.iterrows():
             chemical = LabelledChemical(
                 formula=line["formula"],
