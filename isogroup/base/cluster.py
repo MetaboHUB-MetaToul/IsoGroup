@@ -1,6 +1,6 @@
 from typing import List, Union, Iterator, Self
 
-from .feature import Feature
+from isogroup.base.feature import Feature
 
 
 class Cluster:
@@ -8,6 +8,10 @@ class Cluster:
     def __init__(self, features: List[Feature]):
         self.features = features
 
+    def __repr__(self) -> str:
+        return f"Cluster({self.features})"
+    
+    
     def __len__(self) -> int:
         return len(self.features)
 
@@ -48,3 +52,23 @@ class Cluster:
     @property
     def highest_mz(self) -> float:
         return max([f.mz for f in self.features])
+
+    @property
+    def metabolite(self) -> str:
+        # Returns the metabolite of the annotated features in the cluster
+        return self.features[0].metabolite
+    
+    @property
+    def isotopologues(self) -> List[int]:
+        # Returns the isotopologues of the annotated features in the cluster
+        return [f.isotopologue for f in self.features]
+
+    @property
+    def missing_isopologue(self) -> List[int]:
+        # Returns a list of missing isotopologues in the cluster
+        pass
+
+    @property
+    def is_adduct(self) -> tuple[bool, str]:
+        # Retourne True si le cluster est un adduct from another cluster
+        pass
