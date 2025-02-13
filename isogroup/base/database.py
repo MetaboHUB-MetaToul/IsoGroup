@@ -1,5 +1,6 @@
 from isogroup.base.feature import Feature
 from isocor.base import LabelledChemical
+from isogroup.base.cluster import Cluster
 import pandas as pd
 
 
@@ -10,6 +11,7 @@ class Database:
         self.features: list = []
         self.tracer: str = tracer
         self.tracer_element: str = tracer_element
+        self.clusters: list = []
 
         _isodata: dict = LabelledChemical.DEFAULT_ISODATA
         self._delta_mz_tracer: float = _isodata["C"]["mass"][1] - _isodata[
@@ -17,6 +19,7 @@ class Database:
         self._delta_mz_hydrogen: float = _isodata["H"]["mass"][0]
 
         self.initialize_theoretical_features()
+        self.initialize_theoretical_clusters()
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -49,3 +52,20 @@ class Database:
                     isotopologue=i
                 )
                 self.features.append(feature)
+
+    def initialize_theoretical_clusters(self):
+        """
+        Creates theoretical clusters from the theoretical features
+        Clusters are created by grouping features with the same metabolite
+        """
+        metabolite_dict = {}
+        for feature in self.features:
+            if feature.metabolite not in metabolite_dict:
+                metabolite_dict[feature.metabolite] = []
+            metabolite_dict[feature.metabolite].append(feature)
+
+        for metabolite, features in metabolite_dict.items():
+            cluster = Cluster(features)
+            self.clusters.append(cluster)
+
+
