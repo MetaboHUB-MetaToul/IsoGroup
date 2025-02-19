@@ -33,7 +33,7 @@ class Experiment:
             identity = idx[2]
 
             # Initialize the experiment features from the dataset
-            feature_data = Feature(rt=rt, mz=mz, intensity=None, metabolite=None, isotopologue=None)
+            feature_data = Feature(rt=rt, mz=mz, Fid=identity, intensity=None, metabolite=None, isotopologue=None, mz_error=None, rt_error=None) 
 
             # Initialize lists to store the metabolites, isotopologues, mz errors and rt errors
             metabolites, isotopologues, mz_errors, rt_errors = [], [], [], []
@@ -59,6 +59,8 @@ class Experiment:
             # Store all annotations in feature_data
             feature_data.metabolite = metabolites
             feature_data.isotopologue = isotopologues
+            feature_data.mz_error = mz_errors
+            feature_data.rt_error = rt_errors
             self.feature_exp.append(feature_data)
                 
         self.mz_tol = mz_tol
@@ -82,10 +84,54 @@ class Experiment:
             self.samples[sample] = Sample(dataset=data[[sample]], sample_type="test")
  
 
-
     def get_metabolite_clusters(self):
         """
-        Create metabolite clusters from the feature_exp in the annotated experiment (if unique annotation)
+        Create clusters of annotated features based on the metabolite.
         """
+        # Check if the experiment has been annotated
+        if not self.feature_exp:
+            raise ValueError("The experiment has not been annotated yet.")
 
+        metabolite_clusters = {}
 
+        # Iterate over feature_exp to retrieve all features with their annotations
+        for feature in self.feature_exp:
+            if feature.metabolite:  # Only consider annotated features
+                key = tuple(sorted(feature.metabolite))  # Sort and convert to tuple to use as a dictionary key
+                if key not in metabolite_clusters:
+                    metabolite_clusters[key] = []
+                metabolite_clusters[key].append(feature)
+
+        # Create Cluster objects
+        self.annotated_clusters = [Cluster(features) for features in metabolite_clusters.values()]
+
+        # Assign a unique identifier Cid to each cluster
+        for idx, cluster in enumerate(self.annotated_clusters):
+            cluster.Cid = idx
+
+        # Create a dataframe to summarize the annotated clusters
+        cluster_data = []
+
+        # Iterate over the annotated clusters
+        for cluster in self.annotated_clusters:
+            for feature in cluster.features:
+                # Get the mz_error, rt_error and identity of the feature
+                isotopologue = feature.isotopologue
+                mz = feature.mz
+                rt = feature.rt
+                mz_error = feature.mz_error
+                rt_error = feature.rt_error
+                identity = feature.Fid
+
+                # Append the feature data to the cluster_data list
+                cluster_data.append([cluster.Cid, cluster.metabolite, isotopologue, identity, mz, rt, mz_error, rt_error])
+            
+        # Create a DataFrame to summarize the annotated clusters
+
+        self.clusters_summary = pd.DataFrame(
+            cluster_data,
+            columns=["Cid", "metabolite", "isotopologues", "identity", "mz", "rt", "mz_error", "rt_error"]
+        )
+
+        # Export the cluster summary to a tsv file
+        self.clusters_summary.to_csv("cluster_summary.tsv", sep="\t", index=False)
