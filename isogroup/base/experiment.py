@@ -131,7 +131,7 @@ class Experiment:
         self.clusters_summary = pd.DataFrame(
             cluster_data,
             columns=["Cid", "metabolite", "isotopologues", "identity", "mz", "rt", "mz_error", "rt_error"]
-        )
+        ).set_index(["mz", "rt", "identity"])
 
         # Export the cluster summary to a tsv file
         self.clusters_summary.to_csv("cluster_summary.tsv", sep="\t", index=False)
