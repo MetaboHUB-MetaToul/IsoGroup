@@ -1,5 +1,4 @@
 from typing import List, Union, Iterator, Self
-
 from isogroup.base.feature import Feature
 
 
@@ -7,6 +6,7 @@ class Cluster:
 
     def __init__(self, features: List[Feature]):
         self.features = features
+        self.Cid = None
 
     def __repr__(self) -> str:
         return f"Cluster({self.features})"
@@ -36,6 +36,13 @@ class Cluster:
 
     def __iter__(self) -> Iterator[Feature]:
         return iter(self.features)
+    
+    
+    def get_cluster(metabolite: str, sample: str) -> Self:
+        """
+        Returns the cluster of the metabolite in the given sample
+        """
+        pass
 
     @property
     def lowest_rt(self) -> float:
@@ -55,20 +62,36 @@ class Cluster:
 
     @property
     def metabolite(self) -> str:
-        # Returns the metabolite of the annotated features in the cluster
+        """
+        Returns the metabolite of the annotated features in the cluster
+        """
         return self.features[0].metabolite
     
     @property
     def isotopologues(self) -> List[int]:
-        # Returns the isotopologues of the annotated features in the cluster
+        """
+        Returns the isotopologues of the annotated features in the cluster
+        """
         return [f.isotopologue for f in self.features]
+ 
+    @property
+    def is_complete(self) -> bool:
+        """
+        Returns True if the cluster is complete
+        """
+        delta_mz_tracer = 1.00335 # Should be added to the attributes of the class for untargeted analysis ?
+        # Suppose that the lowest mz is M0 and the highest mz is Mn
+        # Check only for annotated clusters ?
+        excepted_length = int(round((self.highest_mz - self.lowest_mz) / delta_mz_tracer, 1)) + 1
+        return len(self.features) == excepted_length
 
     @property
     def missing_isopologue(self) -> List[int]:
-        # Returns a list of missing isotopologues in the cluster
-        pass
-
+        """
+        Returns a list of missing isotopologues in the cluster
+        """
+        pass    
+    
     @property
     def is_adduct(self) -> tuple[bool, str]:
-        # Retourne True si le cluster est un adduct from another cluster
         pass
