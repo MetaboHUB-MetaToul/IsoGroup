@@ -4,9 +4,9 @@ from isogroup.base.feature import Feature
 
 class Cluster:
 
-    def __init__(self, features: List[Feature]):
+    def __init__(self, features: List[Feature], cluster_id = None):
         self.features = features
-        self.Cid = None
+        self.cluster_id = cluster_id
 
     def __repr__(self) -> str:
         return f"Cluster({self.features})"
