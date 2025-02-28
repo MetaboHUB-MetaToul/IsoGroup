@@ -31,11 +31,15 @@ class Experiment:
             rt = idx[1]
             identity = idx[2]
 
+            # 28/02 NBU : Recover the intensities of the samples pour les colonnes qui ne sont pas mz, rt et identity
+            intensities = {sample: self.experiment.loc[idx, sample] for sample in self.experiment.columns if sample not in ["mz", "rt", "identity"]}
+
             # Initialize the experiment features from the dataset
             exp_feature = Feature(
                 rt=rt, mz=mz, 
-                Fid=identity, 
-                intensity=None, 
+                feature_id=identity, 
+                intensity=intensities, # NBU 28/02 : Add the intensities of the samples as a dictionary
+                formula=[], 
                 metabolite=[], 
                 isotopologue=[],
                 mz_error=[], 
@@ -55,6 +59,7 @@ class Experiment:
                 
                     exp_feature.metabolite.append(th_feature.metabolite)
                     exp_feature.isotopologue.append(th_feature.isotopologue)
+                    exp_feature.formula = th_feature.formula
                     exp_feature.mz_error.append(mz_error)
                     exp_feature.rt_error.append(rt_error)
 
@@ -64,112 +69,31 @@ class Experiment:
         self.mz_tol = mz_tol
         self.rt_tol = rt_tol
 
+        # Initialize the samples from the dataset
+        self.initialize_samples()
+
         # Create a DataFrame to summarize the annotated data
-        self.to_dataframe()
+        #self.to_dataframe()
 
 
     def initialize_samples(self):
         """
-        Initialize the samples from the dataset.
+        Initialize the samples by creating sample objects for each column in the experiment.
         :return:
         """
-        data = self.annotated_experiment if (self.annotated_experiment is not None) else self.experiment
-        for sample in data.columns:
-            self.samples[sample] = Sample(dataset=data[[sample]], sample_type="test")
+        self.samples = {}
+        sample_columns = [col for col in self.experiment.columns if col not in ["mz", "rt", "identity"]]
 
- 
+        # Recover the annotated features for each sample
+        for sample in sample_columns:
+            # Initialize the sample object
+            self.samples[sample] = Sample(dataset=self.experiment[[sample]], sample_name=sample)
 
-    def get_metabolite_clusters(self):
-        """
-        Create clusters of annotated features based on the metabolite.
-        """
-        # Check if the experiment has been annotated
-        if not self.annotated_data:
-            raise ValueError("The experiment has not been annotated yet.")
-
-        metabolite_clusters = {}
-
-        # Iterate over annotated_data to retrieve all features with their annotations
-        for feature in self.annotated_data:
-            if feature.metabolite:  # Only consider annotated features
-                key = tuple(sorted(feature.metabolite))  # Sort and convert to tuple to use as a dictionary key
-                if key not in metabolite_clusters:
-                    metabolite_clusters[key] = []
-                metabolite_clusters[key].append(feature)
-
-        # Create Cluster objects
-        self.annotated_clusters = [
-            Cluster(features=features, cluster_id=idx) 
-            for idx, features in enumerate(metabolite_clusters.values())
-        ]
-
-        # Create a dataframe to summarize the annotated clusters
-        cluster_data = []
-
-        # Iterate over the annotated clusters
-        for cluster in self.annotated_clusters:
-            for feature in cluster.features:
-                # Append the feature data to the cluster_data list
-                cluster_data.append(
-                        [
-                        cluster.cluster_id, 
-                        cluster.metabolite, 
-                        feature.isotopologue, 
-                        feature.feature_id, 
-                        feature.mz, 
-                        feature.rt, 
-                        feature.mz_error, 
-                        feature.rt_error
-                        ]
-                    )
-            
-        # Create a DataFrame to summarize the annotated clusters
-
-        self.clusters_summary = pd.DataFrame(
-            cluster_data,
-            columns=["cluster_id", "metabolite", "isotopologues", "identity", "mz", "rt", "mz_error", "rt_error"]
-        ).set_index(["mz", "rt", "identity"])
-
-        # Export the cluster summary to a tsv file
-        self.clusters_summary.to_csv("cluster_summary.tsv", sep="\t", index=False)
-
-# class AnnotationError(Exception):
-#     pass
-
-
-    def to_dataframe(self):
-        """
-        Create a DataFrame to summarize the annotated data
-        """
-        # Check if the experiment has been annotated
-        if not self.annotated_data:
-            raise ValueError("The experiment has not been annotated yet.")
-
-        data = []
-
-        # Iterate over the annotated data
-        for feature in self.annotated_data:
-            data.append(
-                [
-                    feature.feature_id, 
-                    feature.metabolite, 
-                    feature.isotopologue, 
-                    feature.mz, 
-                    feature.rt, 
-                    feature.mz_error, 
-                    feature.rt_error
-                ]
-            )
-
-        # Create a DataFrame to summarize the annotated data
-        self.annotated_df = pd.DataFrame(
-            data,
-            columns=["identity", "metabolite", "isotopologue", "mz", "rt", "mz_error", "rt_error"]
-        ).set_index(["mz", "rt", "identity"])
-
-        # Export the annotated data to a tsv file
-        self.annotated_df.to_csv("annotated_data.tsv", sep="\t", index=True)
-
-
+            # Associate the annotated features to the sample
+            for feature in self.annotated_data:
+                if sample in feature.intensity:
+                    # Keep only the intensity of the sample
+                    feature.intensity = {sample : feature.intensity[sample]}
+                    self.samples[sample].features.append(feature)
 
 
