@@ -1,6 +1,6 @@
 from typing import List, Union, Iterator, Self
 from isogroup.base.feature import Feature
-
+import re
 
 class Cluster:
 
@@ -44,6 +44,27 @@ class Cluster:
         """
         pass
 
+
+    def _get_element_number(self, element: str) -> int:
+        """
+        Returns the number of element tracer in the formula
+        """
+        formula = self.features[0].formula
+        if formula is None:
+            raise ValueError("Impossible to determine completeness without chemical formula.")
+        
+        # Extract the number of element tracer "C" in the formula   -- ## To be changed to be adaptable to any element tracer        
+        element_number = re.findall(rf"{element}(\d+)", formula)
+
+        if element in formula and not element_number:
+            return 1
+        elif element not in formula:
+            return 0
+            raise ValueError(f"The chemical formula does not contain the element '{element}'.")
+        else:
+            return int(element_number[0])
+        
+
     @property
     def lowest_rt(self) -> float:
         return min([f.rt for f in self.features])
@@ -67,6 +88,7 @@ class Cluster:
         """
         return self.features[0].metabolite
     
+    
     @property
     def isotopologues(self) -> List[int]:
         """
@@ -74,23 +96,40 @@ class Cluster:
         """
         return [f.isotopologue for f in self.features]
  
+
     @property
     def is_complete(self) -> bool:
         """
         Returns True if the cluster is complete
         """
-        delta_mz_tracer = 1.00335 # Should be added to the attributes of the class for untargeted analysis ?
-        # Suppose that the lowest mz is M0 and the highest mz is Mn
-        # Check only for annotated clusters ?
-        excepted_length = int(round((self.highest_mz - self.lowest_mz) / delta_mz_tracer, 1)) + 1
-        return len(self.features) == excepted_length
-
+        # Return an error if the cluster is not annotated
+        if self.metabolite is None:
+            raise ValueError("The cluster is not annotated. Please annotate the cluster first.")
+        
+        element_number = self._get_element_number("C")
+        
+        return (self.__len__()) == element_number + 1
+        
+    
     @property
-    def missing_isopologue(self) -> List[int]:
+    def missing_isotopologue(self) -> List[int]:
         """
         Returns a list of missing isotopologues in the cluster
+
+        --> Adapt for more than one annotation (metabolite) in the cluster / 
         """
-        pass    
+        # Check if the cluster is complete
+        if self.is_complete:
+            return []
+        
+        element_number = self._get_element_number("C")
+        expected_isotopologues = element_number + 1
+        current_isotopologues = set([item for sublist in self.isotopologues for item in sublist])
+
+        missing_isotopologues = [i for i in range(expected_isotopologues) if i not in current_isotopologues]
+
+        return missing_isotopologues
+        
     
     @property
     def is_adduct(self) -> tuple[bool, str]:
