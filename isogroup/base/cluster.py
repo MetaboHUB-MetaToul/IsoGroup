@@ -9,7 +9,7 @@ class Cluster:
         self.cluster_id = cluster_id
 
     def __repr__(self) -> str:
-        return f"Cluster({self.features})"
+        return f"Cluster({self.cluster_id}, {self.features})"
     
     
     def __len__(self) -> int:
