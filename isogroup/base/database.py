@@ -47,6 +47,7 @@ class Database:
                 feature = Feature(
                     rt=line["rt"],
                     mz=mz,
+                    formula=line["formula"],
                     intensity=None,
                     metabolite=chemical.label,
                     isotopologue=i
