@@ -73,7 +73,7 @@ class Experiment:
         self.initialize_samples()
 
         # Create a DataFrame to summarize the annotated data
-        #self.to_df()
+        self.to_df()
 
 
     def initialize_samples(self):
@@ -87,3 +87,21 @@ class Experiment:
                 sample.initialize_features(self.annotated_data)
                 self.samples[sample_name] = sample
 
+
+    def to_df(self):
+        """
+        Return a DataFrame of the annotated data
+        """
+        if not self.annotated_data:
+            raise ValueError("The experiment has not been annotated yet.")
+        
+        # Create a DataFrame
+        df = pd.DataFrame([vars(feature) for feature in self.annotated_data])
+
+        # Supprimer certaines colonnes
+        df = df.drop(columns=["is_adduct", "in_cluster"], errors="ignore")  # colonnes à exclure pour l'instant
+
+        # Export the DataFrame to a tsv file
+        df.to_csv("annotated_data.tsv", sep="\t", index=False)
+
+        return df
