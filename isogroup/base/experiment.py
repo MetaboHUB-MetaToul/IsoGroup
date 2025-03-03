@@ -88,6 +88,66 @@ class Experiment:
                 self.samples[sample_name] = sample
 
 
+    def get_metabolite_clusters(self):
+        """
+        Get the metabolite clusters from the annotated features
+        """
+
+        # Check if the experiment has been annotated
+        if not self.annotated_data:
+            raise ValueError("The experiment has not been annotated yet.")
+
+        metabolite_clusters = {}
+
+        # Iterate over annotated_data to retrieve all features with their annotations
+        for feature in self.annotated_data:
+            if feature.metabolite:  # Only consider annotated features
+                key = tuple(sorted(feature.metabolite))  # Sort and convert to tuple to use as a dictionary key
+                if key not in metabolite_clusters:
+                    metabolite_clusters[key] = []
+                metabolite_clusters[key].append(feature)
+
+        # Create Cluster objects
+        self.annotated_clusters = [
+            Cluster(features=features, cluster_id=idx) 
+            for idx, features in enumerate(metabolite_clusters.values())
+        ]
+
+        # Get the summary of the clusters
+        self.cluster_summary()
+
+    def cluster_summary(self):
+        """
+        Return a dataframe of the annotated clusters with information is_complete and missing_isotopologue
+        """
+        if not self.annotated_clusters:
+            raise ValueError("The experiment has not been annotated yet.")
+        
+        cluster_summary = []
+
+        # Create a DataFrame
+        for cluster in self.annotated_clusters:
+            for feature in cluster.features:
+                cluster_summary.append({
+                    "cluster_id": cluster.cluster_id,
+                    "metabolite": cluster.metabolite,
+                    " isotopologue": feature.isotopologue, 
+                    "feature_id": feature.feature_id, 
+                    "mz": feature.mz, 
+                    "rt": feature.rt, 
+                    "mz_error": feature.mz_error, 
+                    "rt_error": feature.rt_error,
+                    "is_complete": cluster.is_complete,
+                    "missing_isotopologue": cluster.missing_isotopologue,
+                    "intensity": feature.intensity
+                })
+
+        df = pd.DataFrame(cluster_summary)
+
+        # Export the DataFrame to a tsv file
+        df.to_csv("cluster_summary.tsv", sep="\t", index=False)
+
+
     def to_df(self):
         """
         Return a DataFrame of the annotated data
