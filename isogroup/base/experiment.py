@@ -73,27 +73,17 @@ class Experiment:
         self.initialize_samples()
 
         # Create a DataFrame to summarize the annotated data
-        #self.to_dataframe()
+        #self.to_df()
 
 
     def initialize_samples(self):
         """
-        Initialize the samples by creating sample objects for each column in the experiment.
-        :return:
+        Initialize Sample objects for each sample in the experiment.
+        For each sample, create a Sample object and initialize its features
         """
-        self.samples = {}
-        sample_columns = [col for col in self.experiment.columns if col not in ["mz", "rt", "identity"]]
-
-        # Recover the annotated features for each sample
-        for sample in sample_columns:
-            # Initialize the sample object
-            self.samples[sample] = Sample(dataset=self.experiment[[sample]], sample_name=sample)
-
-            # Associate the annotated features to the sample
-            for feature in self.annotated_data:
-                if sample in feature.intensity:
-                    # Keep only the intensity of the sample
-                    feature.intensity = {sample : feature.intensity[sample]}
-                    self.samples[sample].features.append(feature)
-
+        for sample_name in self.experiment.columns:
+            if sample_name not in ["mz", "rt", "identity"]:
+                sample = Sample(dataset=self.experiment[[sample_name]], sample_name=sample_name)
+                sample.initialize_features(self.annotated_data)
+                self.samples[sample_name] = sample
 
