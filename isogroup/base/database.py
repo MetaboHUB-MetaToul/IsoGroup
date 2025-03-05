@@ -14,8 +14,8 @@ class Database:
         self.clusters: list = []
 
         _isodata: dict = LabelledChemical.DEFAULT_ISODATA
-        self._delta_mz_tracer: float = _isodata["C"]["mass"][1] - _isodata[
-            "C"]["mass"][0]
+        self._delta_mz_tracer: float = _isodata[tracer_element]["mass"][1] - _isodata[
+            tracer_element]["mass"][0]
         self._delta_mz_hydrogen: float = _isodata["H"]["mass"][0]
 
         self.initialize_theoretical_features()
@@ -39,7 +39,7 @@ class Database:
                 correct_NA_tracer=False,
                 data_isotopes=None,
                 charge=line["charge"],
-                label=line["metabolite"]
+                label=line["metabolite"],
             )
             for i in range(chemical.formula[self.tracer_element] + 1):
                 mz = (chemical.molecular_weight + i * self._delta_mz_tracer
@@ -47,12 +47,12 @@ class Database:
                 feature = Feature(
                     rt=line["rt"],
                     mz=mz,
-                    formula=line["formula"],
                     intensity=None,
-                    metabolite=chemical.label,
+                    metabolite=chemical,
                     isotopologue=i
                 )
                 self.features.append(feature)
+
 
     def initialize_theoretical_clusters(self):
         """
@@ -66,7 +66,5 @@ class Database:
             metabolite_dict[feature.metabolite].append(feature)
 
         for metabolite, features in metabolite_dict.items():
-            cluster = Cluster(features)
+            cluster = Cluster(features, tracer_element=self.tracer_element)
             self.clusters.append(cluster)
-
-
