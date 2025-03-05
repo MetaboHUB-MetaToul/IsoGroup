@@ -4,9 +4,11 @@ import re
 
 class Cluster:
 
-    def __init__(self, features: List[Feature], cluster_id = None):
+    def __init__(self, features: List[Feature], cluster_id = None, tracer = None, tracer_element = None):
         self.features = features
         self.cluster_id = cluster_id
+        self.tracer_element = tracer_element
+        self.tracer = tracer
 
     def __repr__(self) -> str:
         return f"Cluster({self.cluster_id}, {self.features})"
@@ -36,34 +38,7 @@ class Cluster:
 
     def __iter__(self) -> Iterator[Feature]:
         return iter(self.features)
-    
-    
-    def get_cluster(metabolite: str, sample: str) -> Self:
-        """
-        Returns the cluster of the metabolite in the given sample
-        """
-        pass
 
-
-    def _get_element_number(self, element: str) -> int:
-        """
-        Returns the number of element tracer in the formula
-        """
-        formula = self.features[0].formula
-        if formula is None:
-            raise ValueError("Impossible to determine completeness without chemical formula.")
-        
-        # Extract the number of element tracer "C" in the formula   -- ## To be changed to be adaptable to any element tracer        
-        element_number = re.findall(rf"{element}(\d+)", formula)
-
-        if element in formula and not element_number:
-            return 1
-        elif element not in formula:
-            return 0
-            raise ValueError(f"The chemical formula does not contain the element '{element}'.")
-        else:
-            return int(element_number[0])
-        
 
     @property
     def lowest_rt(self) -> float:
@@ -84,9 +59,16 @@ class Cluster:
     @property
     def metabolite(self) -> str:
         """
-        Returns the metabolite of the annotated features in the cluster
+        Returns the metabolite object in the cluster
         """
         return self.features[0].metabolite
+
+    @property
+    def name(self) -> str:
+        """
+        Returns the name of the metabolite in the cluster
+        """
+        return self.features[0].metabolite.label
     
     
     @property
@@ -102,27 +84,26 @@ class Cluster:
         """
         Returns True if the cluster is complete
         """
+
         # Return an error if the cluster is not annotated
         if self.metabolite is None:
             raise ValueError("The cluster is not annotated. Please annotate the cluster first.")
-        
-        element_number = self._get_element_number("C")
-        
-        return (self.__len__()) == element_number + 1
+
+        element_number = self.metabolite.formula[self.tracer_element]
+        return len(self) == element_number + 1
         
     
     @property
     def missing_isotopologue(self) -> List[int]:
         """
         Returns a list of missing isotopologues in the cluster
-
         --> Adapt for more than one annotation (metabolite) in the cluster / 
         """
         # Check if the cluster is complete
         if self.is_complete:
             return []
         
-        element_number = self._get_element_number("C")
+        element_number = self.metabolite.formula[self.tracer_element]
         expected_isotopologues = element_number + 1
         current_isotopologues = set([item for sublist in self.isotopologues for item in sublist])
 
