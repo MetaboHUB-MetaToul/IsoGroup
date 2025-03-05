@@ -17,6 +17,8 @@ class Experiment:
         self.annotated_features: list = [] # List of experimental features after annotation # Inutile ? Modification de l'objet feature directement dans la liste experimental_features
         self.annotated_clusters: list = []   # List of annotated clusters 
 
+        self.annotated_experiment: None | pd.DataFrame = None # Rename
+
 
     def initialize_experimental_features(self):
         """
@@ -98,6 +100,28 @@ class Experiment:
         self.annotate_features(mz_tol, rt_tol)
 
 
+    def features_summary(self, filename = None, sample_name = None):
+        """
+        Create a DataFrame to summarize the annotated data
+        """
 
+        # Create a DataFrame to summarize the experimental features
+        df = pd.DataFrame([vars(f) for f in self.experimental_features])
+        df = df.drop(columns=["is_adduct", "in_cluster"], errors="ignore")
+
+        self.annotated_experiment = df
+
+        # Export the DataFrame to a csv file if a filename is provided
+        if filename:
+            df = df.drop(columns=["metabolite"], errors="ignore")
+            df.to_csv(filename, sep="\t", index=False)
+
+        # Export the Dataframe of only one sample if a sample name is provided
+        if filename and sample_name:
+            df = df[df["sample"] == sample_name]
+            df = df.drop(columns=["metabolite"], errors="ignore")
+            df.to_csv(filename, sep="\t", index=False)
+
+        return df
 
 
