@@ -40,7 +40,7 @@ class Experiment:
                         feature_id=identity, 
                         intensity=intensity,
                         metabolite=[],
-                        name=[],
+                        annotation=[],
                         isotopologue=[],
                         mz_error=[],
                         rt_error=[],
@@ -77,7 +77,7 @@ class Experiment:
                 if abs(mz_error) <= mz_tol and abs(rt_error) <= rt_tol:
                     feature.metabolite.append(th_feature.metabolite)
                     feature.isotopologue.append(th_feature.isotopologue)
-                    feature.name.append(th_feature.metabolite.label)
+                    feature.annotation.append(th_feature.metabolite.label)
                     feature.mz_error.append(mz_error)
                     feature.rt_error.append(rt_error)
 
@@ -88,7 +88,7 @@ class Experiment:
         self.rt_tol = rt_tol
 
 
-    def annotate_experiment(self, mz_tol, rt_tol):
+    def annotate_experiment(self, mz_tol, rt_tol, tracer, tracer_element):
         """
         Annotate the experiment features with the database within a given tolerance
         MultiIndex DataFrame
@@ -99,10 +99,15 @@ class Experiment:
         # Annotate the experimental features
         self.annotate_features(mz_tol, rt_tol)
 
+        self.tracer = tracer
+        self.tracer_element = tracer_element
+
 
     def features_summary(self, filename = None, sample_name = None):
         """
         Create a DataFrame to summarize the annotated data
+        Optionnal: Export the DataFrame to a tsv file if a filename is provided
+        Optionnal: Export the Dataframe of only one sample if a sample name is provided
         """
 
         # Create a DataFrame to summarize the experimental features
@@ -118,10 +123,109 @@ class Experiment:
 
         # Export the Dataframe of only one sample if a sample name is provided
         if filename and sample_name:
+            # Check if the sample name is in the DataFrame
+            if sample_name not in df["sample"].unique():
+                raise ValueError(f"The sample {sample_name} is not in the DataFrame")
+            
             df = df[df["sample"] == sample_name]
             df = df.drop(columns=["metabolite"], errors="ignore")
             df.to_csv(filename, sep="\t", index=False)
 
         return df
 
+    
+    def get_annotated_clusters(self):
+        """
+        Create clusters by metabolite from the annotated features
+        Duplicate the features if they have multiple annotations to create a cluster for each annotation
+        """
+        # Check if the experiment has been annotated
+        if not self.annotated_features:
+            raise ValueError("The experiment has not been annotated yet")
+        
+        # Create a dictionary to store the clusters
+        clusters = {}
+        for feature in self.experimental_features:
+            for metabolite_name in feature.annotation: # A feature can have multiple annotations
+                if metabolite_name not in clusters:
+                    clusters[metabolite_name] = []
+                clusters[metabolite_name].append(feature)
+                
+        # Create a Cluster object for each cluster and add a cluster id
+        self.annotated_clusters = [
+            Cluster(features, cluster_id=i, cluster_annotation=metabolite_name, tracer=self.tracer, tracer_element=self.tracer_element)
+            for i, (metabolite_name, features) in enumerate(clusters.items(), start=0)
+            ]
 
+        # self.annotated_clusters = [
+        #     Cluster(features, cluster_id=i)
+        #     for i, (metabolite_name, features) in enumerate(clusters.items(), start=0)
+        #     ]
+
+
+    def cluster_summary(self, filename = None, sample_name = None):
+        """
+        Create a DataFrame to summarize the annotated clusters
+        Optionnal: Export the DataFrame to a tsv file if a filename is provided
+        Optionnal: Export the Dataframe of only one sample if a sample name is provided
+        """
+        # Check if the experiment has been annotated
+        if not self.annotated_clusters:
+            raise ValueError("No annotated clusters found. Run get_annotated_clusters() first")
+        
+        # Check if the sample name is in the DataFrame
+        all_samples = {f.sample for c in self.annotated_clusters for f in c.features}
+        if sample_name and sample_name not in all_samples:
+            raise ValueError(f"Sample {sample_name} not found in annotated clusters. Available samples: {', '.join(all_samples)}")
+        
+        cluster_data = [] # List to store the cluster data
+
+        for cluster in self.annotated_clusters:
+            for feature in cluster.features:
+            
+                # Apply filter on the sample name if provided
+                if sample_name and feature.sample != sample_name:
+                    continue
+
+                cluster_data.append({
+                    "cluster_id": cluster.cluster_id,
+                    "annotation": cluster.cluster_annotation,
+                    "feature_id": feature.feature_id,
+                    "mz": feature.mz,
+                    "rt": feature.rt,
+                    "feature_possible_annotation": feature.annotation,
+                    "isolopologue": feature.isotopologue,
+                    "mz_error": feature.mz_error,
+                    "rt_error": feature.rt_error,
+                    "sample": feature.sample,
+                    "intensity": feature.intensity,
+                    "is_complete": cluster.is_complete,
+                    "missing_isotopologue": cluster.missing_isotopologue
+                })
+
+        # Create a DataFrame to summarize the annotated clusters
+        df = pd.DataFrame(cluster_data)
+
+        # Check if the DataFrame is empty
+        # if df.empty:
+        #     raise ValueError("No data found for the provided sample") 
+
+        # Export the DataFrame to a tsv file if a filename is provided
+        if filename:
+            df.to_csv(filename, sep="\t", index=False)
+
+        return df
+
+
+
+    def feature_by_id(self):
+        """
+        Return all the features with the same feature_id
+        """
+        pass
+
+    def feature_by_sample(self):
+        """
+        Return all the features for a specific sample
+        """
+        pass
