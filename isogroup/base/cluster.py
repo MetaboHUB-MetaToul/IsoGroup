@@ -4,22 +4,23 @@ import re
 
 class Cluster:
 
-    def __init__(self, features: List[Feature], cluster_id = None, cluster_annotation = None, tracer = None, tracer_element = None):
+    def __init__(self, features: list|None, cluster_id = None, name=None):
         self.features = features
         self.cluster_id = cluster_id
-        self.tracer_element = tracer_element
-        self.tracer = tracer
-        self.cluster_annotation = cluster_annotation # Name of the annotated cluster
+        self.tracer_element = features[0]._tracer_element if features is not None else None
+        self.tracer = features[0].tracer if features is not None else None
+        self.name = name
+        self._cluster_annotation_formula = None
 
     def __repr__(self) -> str:
-        return f"Cluster({self.cluster_id}, {self.cluster_annotation}, {self.features})"
+        return f"Cluster({self.cluster_id}, {self.features})"
     
     
     def __len__(self) -> int:
         """
-        Returns the number of unique features in the cluster, i.e the number of unique feature_id in the cluster
+        Returns the number of features in the cluster
         """
-        return len(set([f.feature_id for f in self.features]))
+        return len(self.features)
 
 
     def __add__(self, other: Union[Feature, Self]) -> Self:
@@ -44,6 +45,12 @@ class Cluster:
     def __iter__(self) -> Iterator[Feature]:
         return iter(self.features)
 
+    @property
+    def annotation(self):
+        """
+        Returns the complete annotation of each feature of the cluster
+        """
+        return [f.annotation for f in self.features]
 
     @property
     def lowest_rt(self) -> float:
@@ -87,29 +94,31 @@ class Cluster:
         """
         Returns the formula of the cluster annotation
         """
-        # Check if the cluster is annotated
-        if self.cluster_annotation is None:
-            raise ValueError("No cluster annotation found. Run get_annotated_clusters() first")
+        if self._cluster_annotation_formula is None:
+            # Check if the cluster is annotated
+            if self.name is None:
+                raise ValueError("No cluster annotation found. Run get_annotated_clusters() first")
+            if len(self.features) == 0:
+                raise ValueError("No features found in this cluster. Run get_annotated_clusters() first")
 
-        # Retrieve the formula for the metabolite matching the cluster_annotation
-        for metabolite in self.metabolite:
-            if metabolite.label == self.cluster_annotation:
-                return metabolite.formula
-        else:
-            raise ValueError(f"No metabolite found with the label {self.cluster_annotation}")
+            # Retrieve the formula for the metabolite matching the cluster_annotation
+            for feature in self.features:
+                if feature.annotation == self.name:
+                    return feature.formula
+        return self._cluster_annotation_formula
 
-    @property
-    def cluster_annotation_isotopologues(self) -> List[int]:
-        """
-        Returns the list of isotopologues for feature.metabolite matching the cluster_annotation
-        """
-        cluster_isotopologues = set()
+    # @property
+    # def cluster_annotation_isotopologues(self) -> List[int]:
+    #     """
+    #     Returns the list of isotopologues for feature.metabolite matching the cluster_annotation
+    #     """
+    #     cluster_isotopologues = set()
 
-        for feature in self.features:
-            if self.cluster_annotation in feature.annotation:
-                for isotopologue_set in feature.isotopologue:
-                    cluster_isotopologues.update(feature.isotopologue)
-        return list(cluster_isotopologues)
+    #     for feature in self.features:
+    #         if self.cluster_annotation in feature.annotation:
+    #             for isotopologue_set in feature.isotopologue:
+    #                 cluster_isotopologues.update(feature.isotopologue)
+    #     return list(cluster_isotopologues)
                           
 
     @property
@@ -124,7 +133,7 @@ class Cluster:
 
  
     @property
-    def missing_isotopologue(self) -> List[int]:
+    def missing_isotopologue(self, name) -> List[int]:
         """
         Returns a list of missing isotopologues in the cluster
         """
@@ -135,7 +144,7 @@ class Cluster:
         formula = self.cluster_annotation_formula
         element_number = formula[self.tracer_element]
         expected_isotopologues = list(range(element_number + 1))
-        current_isotopologues = self.cluster_annotation_isotopologues
+        current_isotopologues = [f.isotopologue for f in self.features if f.annotation == name]
         return [i for i in expected_isotopologues if i not in current_isotopologues]        
     
     @property
