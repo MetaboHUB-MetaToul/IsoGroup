@@ -1,6 +1,5 @@
 from typing import List, Union, Iterator, Self
 from isogroup.base.feature import Feature
-import re
 
 class Cluster:
 
@@ -10,11 +9,10 @@ class Cluster:
         self.tracer_element = features[0]._tracer_element if features is not None else None
         self.tracer = features[0].tracer if features is not None else None
         self.name = name
-        self._cluster_annotation_formula = None
+        self._cluster_formula = None
 
     def __repr__(self) -> str:
         return f"Cluster({self.cluster_id}, {self.features})"
-    
     
     def __len__(self) -> int:
         """
@@ -46,11 +44,26 @@ class Cluster:
         return iter(self.features)
 
     @property
-    def annotation(self):
+    def metabolite(self): ## NBU
         """
         Returns the complete annotation of each feature of the cluster
         """
-        return [f.annotation for f in self.features]
+        return [f.metabolite for f in self.features]
+    
+    @property
+    def chemical(self):
+        """
+        Returns the chemical object of the cluster
+        """
+        return [f.chemical for f in self.features]
+
+    @property
+    def element_number(self):
+        """
+        Returns the number of tracer element in the cluster
+        """
+        self.cluster_formula
+        return self._cluster_formula[self.tracer_element]
 
     @property
     def lowest_rt(self) -> float:
@@ -68,46 +81,126 @@ class Cluster:
     def highest_mz(self) -> float:
         return max([f.mz for f in self.features])
 
-    @property
-    def metabolite(self) -> str:
-        """
-        Returns the metabolite objects associated to the annotated features in the cluster
-        """
-        return self.features[0].metabolite
+
 
     @property
     def f_annotations(self) -> str:
         """
         Returns the list of possible feature annotations in the cluster
         """
-        return self.features[0].annotation
+        return self.features[0].metabolite
     
     @property
-    def f_isotopologues(self) -> List[int]:
+    def cluster_isotopologues(self) -> List[int]:
         """
         Returns the list of isotopologues for the annotated features in the cluster
         """
-        return [f.isotopologue for f in self.features]
+        isotopologues = []
+        for feature in self.features:
+            if self.name in feature.metabolite:
+                idx = feature.metabolite.index(self.name)
+                isotopologues.append(feature.isotopologue[idx])
+        return isotopologues
+        #return [f.isotopologue for f in self.features if f.metabolite == self.name]
 
     @property
-    def cluster_annotation_formula(self) -> str:
+    def cluster_formula(self) -> str:
         """
-        Returns the formula of the cluster annotation
+        Returns the feature.formula for the metabolite matching the cluster.name
         """
-        if self._cluster_annotation_formula is None:
+        if self._cluster_formula is None:
             # Check if the cluster is annotated
             if self.name is None:
-                raise ValueError("No cluster annotation found. Run get_annotated_clusters() first")
+                raise ValueError("No cluster found. Run clusterize() first")
             if len(self.features) == 0:
-                raise ValueError("No features found in this cluster. Run get_annotated_clusters() first")
+                raise ValueError("No features found in this cluster. Run clusterize() first")
+            
 
-            # Retrieve the formula for the metabolite matching the cluster_annotation
-            for feature in self.features:
-                if feature.annotation == self.name:
-                    return feature.formula
-        return self._cluster_annotation_formula
+            if self.name in self.features[0].metabolite:
+                idx = self.features[0].metabolite.index(self.name)
+                self._cluster_formula = self.features[0].formula[idx]
+            else:  
+                raise ValueError(f"No metabolite matching '{self.name}' found in the cluster features")
+            
+        return self._cluster_formula
 
-    # @property
+    @property
+    def expected_isotopologues_in_cluster(self):
+        """
+        Returns the list of expected isotopologues in the cluster
+        """
+        return list(range(self.element_number + 1))
+                           
+
+    @property
+    def is_complete(self) -> bool:
+        """
+        Returns True if the cluster is complete (I.e contains all isotopologues expected)
+        """   
+        if len(self) == self.element_number + 1:
+            if self.expected_isotopologues_in_cluster == self.cluster_isotopologues:
+                return True
+        return False
+        #return len(self) == self.element_number + 1
+
+
+    @property
+    def missing_isotopologue(self) -> List[int]:
+        """
+        Returns a list of missing isotopologues in the cluster
+        """
+        # Check if the cluster is complete
+        if self.is_complete:
+            return []
+        
+        # expected_isotopologues = list(range(self.element_number + 1))
+        # current_isotopologues = [f.isotopologue for f in self.features if f.metabolite == self.name]
+
+        return [i for i in self.expected_isotopologues_in_cluster if i not in self.cluster_isotopologues]
+
+    @property
+    def duplicated_isotopologues(self):
+        """
+        Returns a list of duplicated isotopologues in the cluster
+        """
+        if self.is_complete:
+            return []
+        
+        if self.expected_isotopologues_in_cluster == self.cluster_isotopologues:
+            return []
+        
+        if self.expected_isotopologues_in_cluster != self.cluster_isotopologues:
+            duplicated_isotopologues = [i for i in set(self.cluster_isotopologues) if self.cluster_isotopologues.count(i) > 1]
+            # Return the list of duplicated isotopologues
+            return duplicated_isotopologues
+        
+        # if self.is_complete:
+        #     return []
+        
+        # expected_isotopologues = list(range(self.element_number + 1))
+        # current_isotopologues = [f.isotopologue for f in self.features if f.metabolite == self.name]
+        # return [i for i in expected_isotopologues if i not in current_isotopologues]        
+    
+    @property
+    def is_adduct(self) -> tuple[bool, str]:
+        pass
+
+
+        # if self._cluster_metabolite_formula is None:
+        #     # Check if the cluster is annotated
+        #     if self.name is None:
+        #         raise ValueError("No cluster metabolite found. Run clusterize() first")
+        #     if len(self.features) == 0:
+        #         raise ValueError("No features found in this cluster. Run clusterize() first")
+
+        #     # Retrieve the formula for the metabolite matching the cluster_metabolite
+        #     for feature in self.features:
+        #         if feature.metabolite == self.name:
+        #             return feature.formula
+                
+        # return self._cluster_metabolite_formula
+
+            # @property
     # def cluster_annotation_isotopologues(self) -> List[int]:
     #     """
     #     Returns the list of isotopologues for feature.metabolite matching the cluster_annotation
@@ -119,34 +212,3 @@ class Cluster:
     #             for isotopologue_set in feature.isotopologue:
     #                 cluster_isotopologues.update(feature.isotopologue)
     #     return list(cluster_isotopologues)
-                          
-
-    @property
-    def is_complete(self) -> bool:
-        """
-        Returns True if the cluster is complete
-        """     
-        formula = self.cluster_annotation_formula # Formula of the cluster annotation
-        element_number = formula[self.tracer_element] # Number of tracer element in the formula
-        
-        return len(self) == element_number + 1
-
- 
-    @property
-    def missing_isotopologue(self, name) -> List[int]:
-        """
-        Returns a list of missing isotopologues in the cluster
-        """
-        # Check if the cluster is complete
-        if self.is_complete:
-            return []
-        
-        formula = self.cluster_annotation_formula
-        element_number = formula[self.tracer_element]
-        expected_isotopologues = list(range(element_number + 1))
-        current_isotopologues = [f.isotopologue for f in self.features if f.annotation == name]
-        return [i for i in expected_isotopologues if i not in current_isotopologues]        
-    
-    @property
-    def is_adduct(self) -> tuple[bool, str]:
-        pass
