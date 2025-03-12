@@ -3,6 +3,7 @@ from isogroup.base.database import Database
 from isogroup.base.feature import Feature
 from isogroup.base.cluster import Cluster
 from isocor.base import LabelledChemical
+from isogroup.base.misc import Misc
 import re
 
 class Experiment:
@@ -15,13 +16,8 @@ class Experiment:
         self._rt_tol: None | float = None
 
         self._tracer: None | str = tracer
-        self._tracer_element, self._tracer_idx = self._parse_strtracer(tracer)
-        #self.experimental_features : list = [] # List of experimental features
-        #self.annotated_features: list = [] # List of experimental features after annotation # Inutile ? Modification de l'objet feature directement dans la liste experimental_features
-        #self.annotated_clusters: list = []   # List of annotated clusters 
-        #self.annotated_sample_clusters: list = [] # List of annotated custers for each sample
+        self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
         self.clusters = None
-        #self.annotated_experiment: None | pd.DataFrame = None # Rename
         
 
     @property
@@ -40,37 +36,6 @@ class Experiment:
     def mz_tol(self):
         return self._mz_tol
     
-    @staticmethod
-    def _parse_strtracer(str_tracer):
-        """Parse the tracer code.
-
-        Args:
-            str_tracer (str): tracer code (e.g. "13C")
-
-        Returns:
-            tuple
-                - (str) tracer element (e.g. "C")
-                - (int) tracer index in :py:attr:`~data_isotopes`
-        """
-        try:
-            tracer = re.search(r'(\d*)([A-Z][a-z]*)', str_tracer)
-            count = int(tracer.group(1))
-            tracer_el = tracer.group(2)
-        except (ValueError, AttributeError):
-            raise ValueError("Invalid tracer code: '{}'."
-                             " Please check your inputs.".format(str_tracer))
-        best_diff = float("inf")
-        idx_tracer = None
-        unexpected_msg = "Unexpected tracer code. Are you sure this isotope is "\
-                         "in data_isotopes? '{}'".format(str_tracer)
-        assert tracer_el in LabelledChemical.DEFAULT_ISODATA, unexpected_msg
-        for i, mass in enumerate(LabelledChemical.DEFAULT_ISODATA[tracer_el]["mass"]):
-            test_diff = abs(mass - count)
-            if test_diff < best_diff:
-                best_diff = test_diff
-                idx_tracer = i
-        assert best_diff < 0.5, unexpected_msg
-        return (tracer_el, idx_tracer)
 
     def initialize_experimental_features(self):
         """
@@ -91,12 +56,12 @@ class Experiment:
                         rt=rt, mz=mz, tracer=self.tracer,
                         feature_id=id, 
                         intensity=intensity,
-                        metabolite=[],
-                        annotation=[],
-                        isotopologue=[],
-                        mz_error=[],
-                        rt_error=[],
-                        formula=[],
+                        # chemical=[],
+                        # metabolite=[],
+                        # isotopologue=[],
+                        # mz_error=[],
+                        # rt_error=[],
+                        # formula=[],
                         sample=sample
                         ) 
                     
@@ -126,10 +91,10 @@ class Experiment:
 
                     # Check if the experimental feature is within tolerance
                     if abs(mz_error) <= mz_tol and abs(rt_error) <= rt_tol:
-                        feature.metabolite.append(db_feature.metabolite[0])
+                        feature.chemical.append(db_feature.chemical[0])
                         feature.isotopologue.append(db_feature.isotopologue[0])
-                        feature.annotation.append(db_feature.metabolite[0].label)
-                        feature.formula.append(db_feature.metabolite[0].formula)
+                        feature.metabolite.append(db_feature.chemical[0].label)
+                        feature.formula.append(db_feature.chemical[0].formula)
                         feature.mz_error.append(mz_error)
                         feature.rt_error.append(rt_error)
 
@@ -150,7 +115,7 @@ class Experiment:
 
 
 
-    def features_export(self, filename = None, sample_name = None):
+    def export_features(self, filename = None, sample_name = None):
         """
         Create a DataFrame to summarize the annotated data
         Optionnal: Export the DataFrame to a tsv file if a filename is provided with samples in column
@@ -158,32 +123,35 @@ class Experiment:
         """
 
         # Create a DataFrame to summarize the experimental features
-        df = pd.DataFrame([vars(f) for f in self.experimental_features])
-        df = df.drop(columns=["is_adduct", "in_cluster", "metabolite", "formula"], errors="ignore")
+        feature_data = []
+        for sample in self.samples.values():
+            for feature in sample.values():
+                feature_data.append({
+                    "feature_id": feature.feature_id,
+                    "mz": feature.mz,
+                    "rt": feature.rt,
+                    "metabolite": feature.metabolite,
+                    "isotopologue": feature.isotopologue,
+                    "mz_error": feature.mz_error,
+                    "rt_error": feature.rt_error,
+                    "sample": feature.sample,
+                    "intensity": feature.intensity
+                })
 
-        columns_to_fix = ["annotation", "mz_error", "rt_error", "isotopologue"]
-        for col in columns_to_fix:
-            df[col] = df[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else str(x))
-        df = df.pivot_table(index=["mz", "rt", "feature_id", "annotation", "mz_error", "rt_error", "isotopologue"],
-                                  columns="sample", values="intensity",
-                                  aggfunc="first").reset_index()
-        
-        self.annotated_experiment = df
+        # Create a DataFrame to summarize the annotated data
+        df = pd.DataFrame(feature_data)
 
-        # Export the DataFrame to a csv file if a filename is provided
+        # Export the DataFrame to a tsv file if a filename is provided
         if filename:
             df.to_csv(filename, sep="\t", index=False)
 
-        # Export the Dataframe of only one sample if a sample name is provided
-        if filename and sample_name:
-            # Check if the sample name is in the DataFrame
-            if sample_name not in df.columns:
-                raise ValueError(f"The sample {sample_name} is not in the DataFrame")
-            
-            df = df[["mz", "rt", "feature_id", "annotation", "mz_error", "rt_error", "isotopologue", sample_name]]
-            df.to_csv(filename, sep="\t", index=False)
+            # Export the Dataframe of only one sample if a sample name is provided
+            if sample_name:
+                df = df[df["sample"] == sample_name] # Filter the DataFrame by sample name
+                df.to_csv(filename, sep="\t", index=False)
 
         return df
+
     
     def clusterize(self):
         """
@@ -194,7 +162,7 @@ class Experiment:
         # Group features by metabolite
         for sample in self.samples.values():
             for feature in sample.values():
-                cluster_names += feature.annotation
+                cluster_names += feature.metabolite
 
         cluster_names = set(cluster_names)
         
@@ -213,7 +181,7 @@ class Experiment:
         """
         features = []
         for feature in self.samples[sample_name].values():
-            if name in feature.annotation:
+            if name in feature.metabolite:
                 features.append(feature)
         return features
 
@@ -235,21 +203,22 @@ class Experiment:
         for sample, clusters in self.clusters.items():
             for cname, cluster in clusters.items():
                 for feature in cluster.features:
-                    idx = [i for i,j in enumerate(feature.annotation) if j == cname][0]
+                    idx = [i for i,j in enumerate(feature.metabolite) if j == cname][0]
                     cluster_data.append({
                         "cluster_id": cluster.cluster_id,
-                        "annotation": cluster.name,
+                        "metabolite": cluster.name,
                         "feature_id": feature.feature_id,
                         "mz": feature.mz,
                         "rt": feature.rt,
-                        "feature_possible_annotation": feature.annotation,
+                        "feature_potential_metabolite": feature.metabolite,
                         "isotopologue": feature.isotopologue[idx],
                         "mz_error": feature.mz_error[idx],
                         "rt_error": feature.rt_error[idx],
                         "sample": feature.sample,
                         "intensity": feature.intensity,
-                        "is_complete": "TODO",#cluster.is_complete,
-                        "missing_isotopologue": "TODO"# cluster.missing_isotopologue
+                        "is_complete": cluster.is_complete,
+                        "missing_isotopologue": cluster.missing_isotopologue,
+                        "duplicated_isotopologue": cluster.duplicated_isotopologues
                     })
 
         # Create a DataFrame to summarize the annotated clusters
@@ -262,3 +231,12 @@ class Experiment:
         return df
 
 
+    def get_cluster_by_name(self, name, sample_name:str):
+        """
+        Get a cluster from the experiment by its name, in a given sample if provided
+        """
+        for cluster in self.clusters[sample_name].values():
+            if cluster.name == name:
+                return cluster
+        return None
+    
