@@ -17,7 +17,7 @@ def process(args):
 
     db_data = pd.read_csv(database, sep=";")
 
-    database = Database(dataset=db_data, tracer="13C", tracer_element="C")
+    database = Database(dataset=db_data, tracer="13C")
     data = pd.read_csv(inputdata, sep="\t")
     data = data.set_index(["mz", "rt", "id"])
 
@@ -39,9 +39,9 @@ def parseArgs():
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
     parser.add_argument("--mztol", type=float,
-                        help='mz tolerance (e.g. "1e4")')
+                        help='mz tolerance in ppm (e.g. "5")')
     parser.add_argument("--rttol", type=float,
-                        help='rt tolerance (e.g. "1e4")')
+                        help='rt tolerance in seconds (e.g. "10")')
 
     parser.add_argument("-v", "--verbose",
                         help="flag to enable verbose logs", action='store_true')
