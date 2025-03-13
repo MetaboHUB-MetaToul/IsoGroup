@@ -79,7 +79,7 @@ class Experiment:
                     mz_error = (db_feature.mz - feature.mz)
                     rt_error = (db_feature.rt - feature.rt)
 
-                    # Covert mz_error to ppm
+                    # Covert mz_error to ppm 
                     mz_error = (mz_error / feature.mz) * 1e6
 
                     # Check if the experimental feature is within tolerance
