@@ -2,16 +2,15 @@ import pandas as pd
 from isogroup.base.database import Database
 from isogroup.base.feature import Feature
 from isogroup.base.cluster import Cluster
-from isocor.base import LabelledChemical
 from isogroup.base.misc import Misc
-import re
+
 
 class Experiment:
 
     def __init__(self, dataset: pd.DataFrame, database: 'Database' = None, tracer=None):
         self.dataset = dataset
         self.database = database
-        self.samples: dict = {} # Dictionary to store the samples
+        self.samples: dict = {} 
         self._mz_tol: None | float = None
         self._rt_tol: None | float = None
 
@@ -56,12 +55,6 @@ class Experiment:
                         rt=rt, mz=mz, tracer=self.tracer,
                         feature_id=id, 
                         intensity=intensity,
-                        # chemical=[],
-                        # metabolite=[],
-                        # isotopologue=[],
-                        # mz_error=[],
-                        # rt_error=[],
-                        # formula=[],
                         sample=sample
                         ) 
                     
@@ -69,9 +62,6 @@ class Experiment:
                     if sample not in self.samples:
                         self.samples[sample] = {}
                     self.samples[sample][id] = feature
-                    
-                    # Store all experimental features
-                    #self.experimental_features.append(feature)
 
 
     def annotate_features(self, mz_tol, rt_tol):
@@ -82,12 +72,15 @@ class Experiment:
 
         for sample in self.samples.values():
             for feature in sample.values():
-                
+                    
                 for db_feature in self.database.features:
 
                     # Calculate the exact mz and rt errors
                     mz_error = (db_feature.mz - feature.mz)
                     rt_error = (db_feature.rt - feature.rt)
+
+                    # Covert mz_error to ppm
+                    mz_error = (mz_error / feature.mz) * 1e6
 
                     # Check if the experimental feature is within tolerance
                     if abs(mz_error) <= mz_tol and abs(rt_error) <= rt_tol:
@@ -217,8 +210,9 @@ class Experiment:
                         "sample": feature.sample,
                         "intensity": feature.intensity,
                         "is_complete": cluster.is_complete,
-                        "missing_isotopologue": cluster.missing_isotopologue,
-                        "duplicated_isotopologue": cluster.duplicated_isotopologues
+                        "missing_isotopologue": cluster.missing_isotopologues,
+                        "duplicated_isotopologue": cluster.duplicated_isotopologues,
+                        "status": cluster.status
                     })
 
         # Create a DataFrame to summarize the annotated clusters
@@ -231,7 +225,7 @@ class Experiment:
         return df
 
 
-    def get_cluster_by_name(self, name, sample_name:str):
+    def get_clusters_from_name(self, name, sample_name:str):
         """
         Get a cluster from the experiment by its name, in a given sample if provided
         """
@@ -239,4 +233,40 @@ class Experiment:
             if cluster.name == name:
                 return cluster
         return None
-    
+
+
+## TO DO
+    # def clusters_summary(self, filename = None, sample_name = None):
+    #     """
+    #     Export a tsv file with a summary of the clusters
+    #     """
+    #     # List to store the cluster summary data
+    #     cluster_summary_data = []
+    #     for sample, clusters in self.clusters.items():
+    #         for cluster in clusters.values():
+
+    #             cluster_id = cluster.cluster_summary["cluster_id"]
+    #             # Retrieve the samples in which the cluster is present
+    #             samples_in_cluster = {sample for sample, clusters in self.clusters.items() if cluster_id in [c.cluster_summary["cluster_id"] for c in clusters.values()]}
+
+    #             cluster_summary_data.append({
+    #                 "cluster_id": cluster.cluster_summary["cluster_id"],
+    #                 "name": cluster.cluster_summary["name"],
+    #                 "number_of_features": cluster.cluster_summary["number_of_features"],
+    #                 "isotopologues": cluster.cluster_summary["isotopologues"],
+    #                 "completeness": cluster.cluster_summary["completeness"],
+    #                 "missing_isotopologues": cluster.cluster_summary["missing_isotopologues"],
+    #                 "duplicated_isotopologues": cluster.cluster_summary["duplicated_isotopologues"],
+    #                 "samples": len(samples_in_cluster)
+    #             })
+
+    #     # Créer un DataFrame avec les informations collectées
+    #     df = pd.DataFrame(cluster_summary_data)
+
+
+    #     # Exporter le DataFrame vers un fichier TSV si un nom de fichier est fourni
+    #     if filename:
+    #         df.to_csv(filename, sep="\t", index=False)
+
+    #     # Retourner le DataFrame pour un usage ultérieur si nécessaire
+    #     return df
