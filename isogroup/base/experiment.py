@@ -209,10 +209,9 @@ class Experiment:
                         "rt_error": feature.rt_error[idx],
                         "sample": feature.sample,
                         "intensity": feature.intensity,
-                        "is_complete": cluster.is_complete,
+                        "status": cluster.status,
                         "missing_isotopologue": cluster.missing_isotopologues,
                         "duplicated_isotopologue": cluster.duplicated_isotopologues,
-                        "status": cluster.status
                     })
 
         # Create a DataFrame to summarize the annotated clusters
@@ -234,39 +233,34 @@ class Experiment:
                 return cluster
         return None
 
+    def clusters_summary(self, filename = None):
+        """
+        Export a tsv file with a summary of the clusters
+        """
+        # List to store the cluster summary data
+        cluster_summary = []
+        cluster_id_unique = set() # To store unique cluster_id
 
-## TO DO
-    # def clusters_summary(self, filename = None, sample_name = None):
-    #     """
-    #     Export a tsv file with a summary of the clusters
-    #     """
-    #     # List to store the cluster summary data
-    #     cluster_summary_data = []
-    #     for sample, clusters in self.clusters.items():
-    #         for cluster in clusters.values():
+        for sample, clusters in self.clusters.items():
+            for cluster in clusters.values():
 
-    #             cluster_id = cluster.cluster_summary["cluster_id"]
-    #             # Retrieve the samples in which the cluster is present
-    #             samples_in_cluster = {sample for sample, clusters in self.clusters.items() if cluster_id in [c.cluster_summary["cluster_id"] for c in clusters.values()]}
+                # Check if the cluster_id is unique
+                if cluster.cluster_id not in cluster_id_unique:
+                    cluster_id_unique.add(cluster.cluster_id)
 
-    #             cluster_summary_data.append({
-    #                 "cluster_id": cluster.cluster_summary["cluster_id"],
-    #                 "name": cluster.cluster_summary["name"],
-    #                 "number_of_features": cluster.cluster_summary["number_of_features"],
-    #                 "isotopologues": cluster.cluster_summary["isotopologues"],
-    #                 "completeness": cluster.cluster_summary["completeness"],
-    #                 "missing_isotopologues": cluster.cluster_summary["missing_isotopologues"],
-    #                 "duplicated_isotopologues": cluster.cluster_summary["duplicated_isotopologues"],
-    #                 "samples": len(samples_in_cluster)
-    #             })
+                    summary = cluster.cluster_summary
 
-    #     # Créer un DataFrame avec les informations collectées
-    #     df = pd.DataFrame(cluster_summary_data)
+                    # Retrieve the samples in which the cluster is present
+                    samples_in_cluster = {sample for sample, clusters in self.clusters.items() if cluster.cluster_id in [c.cluster_summary["cluster_id"] for c in clusters.values()]}
+                    summary["samples"] = len(samples_in_cluster)
 
+                    cluster_summary.append(summary)
 
-    #     # Exporter le DataFrame vers un fichier TSV si un nom de fichier est fourni
-    #     if filename:
-    #         df.to_csv(filename, sep="\t", index=False)
+        # Create a DataFrame with the collected information
+        df = pd.DataFrame(cluster_summary)
 
-    #     # Retourner le DataFrame pour un usage ultérieur si nécessaire
-    #     return df
+        # Export the DataFrame to a tsv file if a filename is provided
+        if filename:
+            df.to_csv(filename, sep="\t", index=False)
+
+        return df
