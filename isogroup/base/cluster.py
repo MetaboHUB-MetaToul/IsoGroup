@@ -37,37 +37,21 @@ class Cluster:
         """
         pass
 
+    def __remove__(self, other: Union[Feature, Self]) -> Self:
+        """
+        Remove a feature from the cluster
+        :param other: Feature
+        :return: self
+        """
+        pass
+
     def __contains__(self, item):
         pass
 
     def __iter__(self) -> Iterator[Feature]:
         return iter(self.features)
-
-    @property
-    def metabolite(self):
-        """
-        Returns the complete annotation of each feature of the cluster
-        """
-        return [f.metabolite for f in self.features]
     
-    @property
-    def chemical(self):
-        """
-        Returns the chemical object of the cluster
-        """
-        for feature in self.features:
-            if self.name in feature.metabolite:
-                idx = feature.metabolite.index(self.name)
-                return feature.chemical[idx]
-
-    @property
-    def element_number(self):
-        """
-        Returns the number of tracer element in the cluster
-        """
-        self.formula
-        return self._formula[self.tracer_element]
-
+    
     @property
     def lowest_rt(self) -> float:
         return min([f.rt for f in self.features])
@@ -84,11 +68,36 @@ class Cluster:
     def highest_mz(self) -> float:
         return max([f.mz for f in self.features])
 
+    @property
+    def metabolite(self):
+        """
+        Returns the complete annotation for each feature in the cluster
+        """
+        return [f.metabolite for f in self.features]
+    
+    @property
+    def chemical(self):
+        """
+        Returns the chemical object of the cluster
+        """
+        for feature in self.features:
+            if self.name in feature.metabolite:
+                idx = feature.metabolite.index(self.name)
+                return feature.chemical[idx]
+
+    @property
+    def element_number(self):
+        """
+        Returns the number of tracer element for the formula matching to the cluster name
+        """
+        self.formula
+        return self._formula[self.tracer_element]
+
     
     @property
     def isotopologues(self) -> List[int]:
         """
-        Returns the list of isotopologues for the annotated features in the cluster
+        Returns the list of isotopologues in the cluster
         """
         isotopologues = []
         for feature in self.features:
@@ -101,14 +110,12 @@ class Cluster:
     @property
     def formula(self) -> str:
         """
-        Returns the feature.formula for the metabolite matching the cluster.name
+        Returns the formula of the metabolite matching to the cluster name
         """
         if self._formula is None:
             # Check if the cluster is annotated
             if self.name is None:
                 raise ValueError("No cluster found. Run clusterize() first")
-            if len(self.features) == 0:
-                raise ValueError("No features found in this cluster. Run clusterize() first")
             
             if self.name in self.features[0].metabolite:
                 idx = self.features[0].metabolite.index(self.name)
@@ -123,6 +130,7 @@ class Cluster:
     def expected_isotopologues_in_cluster(self):
         """
         Returns the list of expected isotopologues in the cluster
+        Based on the number of tracer element in its formula
         """
         return list(range(self.element_number + 1))
                            
@@ -130,67 +138,69 @@ class Cluster:
     @property
     def is_complete(self) -> bool:
         """
-        Returns True if the cluster is complete (I.e contains all isotopologues expected)
+        Returns True if the cluster is complete (i.e contains all isotopologues expected)
         """   
-        if len(self) == self.element_number + 1:
-            if self.expected_isotopologues_in_cluster == self.isotopologues:
-                return True
-        return False
+        return len(self) == self.element_number + 1 and self.expected_isotopologues_in_cluster == self.isotopologues
     
-    
-## TO DO
-    # @property 
-    # def status(self):
-    #     """
-    #     Returns the cluster status (Ok, incomplete, overfilled)
-    #     """
-       
-    #     if len(self) < self.element_number + 1:
-    #         return "Incomplete"
+    @property
+    def is_incomplete(self) -> bool:
+        """
+        Returns True if the cluster is incomplete (i.e contains not all isotopologues expected)
+        """
+        return len(self) < self.element_number + 1 or len(set(self.isotopologues)) != len(self.expected_isotopologues_in_cluster)
+
+    @property
+    def is_duplicated(self) -> bool:
+        """
+        Returns True if the cluster contains duplicated isotopologues
+        """
+        return len(set(self.isotopologues)) != len(self.isotopologues)
+
+    @property
+    def is_corrupted(self) -> bool:
+        """
+        Returns True if the cluster is corrupted (overfilled ?) (i.e contains isotopologues not expected)
+        """ 
+        pass
+
+
+    @property 
+    def status(self):
+        """
+        Returns the cluster status (Ok, incomplete, duplicated, corrupted)
+        """
+        if self.is_complete:
+            return "Ok"
         
-    #     if len(self) > self.element_number + 1:
-    #         return "Overfilled"
+        if self.is_incomplete and self.is_duplicated:
+            return "Incomplete, duplicated isotopologues"
+
+        if self.is_incomplete:
+            return "Incomplete"
+
+        if self.is_duplicated:
+            return "Duplicated isotopologues"
         
-    #     if len(self) == self.element_number + 1:
-    #         if self.expected_isotopologues_in_cluster == self.isotopologues:
-    #             return "Ok"
-         
-    #         elif len(self.isotopologues) != len(set(self.isotopologues)): 
-    #             return "Duplicated isotopologues"
-
-    #         elif len(self.isotopologues) < self.expected_isotopologues_in_cluster: # 
-    #             return "Incomplete"
-            
-    #         elif len(self.isotopologues) != len(set(self.isotopologues)) and len(self.isotopologues) < self.expected_isotopologues_in_cluster:
-    #             return "Duplicated and Lissing isotopologues"
-
-
+        # if self.is_corrupted:
+        #     return "Corrupted"
+        
 
     @property
     def missing_isotopologues(self) -> List[int]:
         """
         Returns a list of missing isotopologues in the cluster
         """
-        # Check if the cluster is complete
-        if self.is_complete:
-            return []
-
-        return [i for i in self.expected_isotopologues_in_cluster if i not in self.isotopologues]
+        if self.is_incomplete:
+            return [i for i in self.expected_isotopologues_in_cluster if i not in self.isotopologues]
+        
 
     @property
     def duplicated_isotopologues(self):
         """
         Returns a list of duplicated isotopologues in the cluster
         """
-        if self.is_complete:
-            return []
-        
-        if self.expected_isotopologues_in_cluster == self.isotopologues:
-            return []
-        
-        if self.expected_isotopologues_in_cluster != self.isotopologues:
-            duplicated_isotopologues = [i for i in set(self.isotopologues) if self.isotopologues.count(i) > 1]
-            return duplicated_isotopologues
+        if self.is_duplicated:
+            return [i for i in set(self.isotopologues) if self.isotopologues.count(i) > 1]
         
     
     @property
@@ -207,8 +217,7 @@ class Cluster:
             "name": self.name,
             "number_of_features": len(self),
             "isotopologues": self.isotopologues,
-            "completeness": self.is_complete,
+            "status": self.status,
             "missing_isotopologues": self.missing_isotopologues,
-            "duplicated_isotopologues": self.duplicated_isotopologues,
-            "sample": self.features[0].sample
+            "duplicated_isotopologues": self.duplicated_isotopologues
         }
