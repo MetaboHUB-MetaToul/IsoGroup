@@ -25,9 +25,14 @@ def process(args):
     experiment.annotate_experiment(mz_tol=mztol, rt_tol=rttol)
     experiment.clusterize()
 
-    df_cluster = experiment.export_clusters(filename=Path("C:\Users\butin\Desktop\MTH3\Isogroup\IsoGroup\data\test.tsv"))
-
-
+    # Set working directory from output path
+    if args.output:
+        output = Path(args.output)
+        experiment.export_clusters(filename=output)
+        experiment.clusters_summary(filename=output.with_suffix('.summary.tsv'))
+    else:
+        experiment.export_clusters()
+        experiment.clusters_summary()
 
 def parseArgs():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS,
@@ -42,7 +47,8 @@ def parseArgs():
                         help='mz tolerance in ppm (e.g. "5")')
     parser.add_argument("--rttol", type=float,
                         help='rt tolerance in seconds (e.g. "10")')
-
+    parser.add_argument("-o", "--output", type=str,
+                        help='output file for the clusters')
     parser.add_argument("-v", "--verbose",
                         help="flag to enable verbose logs", action='store_true')
     return parser
