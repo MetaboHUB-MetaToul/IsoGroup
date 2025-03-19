@@ -1,4 +1,3 @@
-import re
 from isogroup.base.misc import Misc
 
 class Feature:

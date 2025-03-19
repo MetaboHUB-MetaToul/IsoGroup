@@ -1,0 +1,1 @@
+isogroup C:\Users\butin\Desktop\MTH3\Isogroup\data\dataset_test_2.txt -D C:\Users\butin\Desktop\MTH3\Isogroup\data\database_test_2.csv -t 13C --mztol 10 --rttol 10 -o C:\Users\butin\Desktop\MTH3\Isogroup\data\res\test.tsv
