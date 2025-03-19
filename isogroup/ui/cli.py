@@ -7,9 +7,21 @@ import pandas as pd
 
 def process(args):
 
-    # create environment
+    # load data file
     inputdata = Path(args.inputdata)
-    database = Path(args.D)
+    if not inputdata.exists():
+        msg = f"File {inputdata} does not exist"
+        raise FileNotFoundError(msg)
+
+    # load database file
+    if hasattr(args, 'D'):
+        database = Path(args.D)
+    else:
+        msg = "No database file provided"
+        raise ValueError(msg)
+    if not database.exists():
+        msg = f"File {database} does not exist"
+        raise FileNotFoundError(msg)
 
     mztol = float(getattr(args, 'mztol', None))
     rttol = float(getattr(args, 'rttol', None))
@@ -31,22 +43,22 @@ def process(args):
         experiment.export_clusters(filename=output)
         experiment.clusters_summary(filename=output.with_suffix('.summary.tsv'))
     else:
-        experiment.export_clusters()
-        experiment.clusters_summary()
+        msg = "No output file provided"
+        raise ValueError(msg)
 
 def parseArgs():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS,
                                      description='annotation of isotopic datasets')
 
     parser.add_argument("inputdata", help="measurements file to process")
-    parser.add_argument("-D", type=str, help="path to database")
+    parser.add_argument("-D", type=str, help="path to database file (csv)") 
 
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
-    parser.add_argument("--mztol", type=float,
+    parser.add_argument("--mztol", type=float, required=True,
                         help='mz tolerance in ppm (e.g. "5")')
-    parser.add_argument("--rttol", type=float,
-                        help='rt tolerance in seconds (e.g. "10")')
+    parser.add_argument("--rttol", type=float, required=True,
+                        help='rt tolerance (e.g. "10")')
     parser.add_argument("-o", "--output", type=str,
                         help='output file for the clusters')
     parser.add_argument("-v", "--verbose",
