@@ -20,7 +20,7 @@ class Feature:
         self.isotopologue = isotopologue if isotopologue is not None else []
         self.__dict__.update(extra_dims)
         self.is_adduct: tuple[bool, str] = (False, "")
-        # self.in_cluster: bool = False
+        self.in_cluster = []
 
 
     def __repr__(self) -> str:
@@ -32,19 +32,12 @@ class Feature:
                 f"mz={self.mz}, "
                 f"intensity={self.intensity})")
     
-    @property
-    def in_cluster(self, clusters):
-        """
-        Check if the feature is in another cluster
-        Return the cluster_id if the feature is in it
-        """
-    pass
+    # @property
+    # def in_cluster(self):
+    #     """
+    #     Check if the feature is in another cluster
+    #     Return the cluster_id if the feature is in it
+    #     """
+    #     pass
 
-
-# class AnnotatedFeature(Feature):
-
-#     def __init__(self, mz_error: float, rt_error: float, **kwargs):
-#         super().__init__(**kwargs)
-#         self.mz_error = mz_error
-#         self.rt_error = rt_error
 

@@ -56,7 +56,7 @@ class Experiment:
                         feature_id=id, 
                         intensity=intensity,
                         sample=sample
-                        ) 
+                        )
                     
                     # Add the feature in the list corresponding to the sample
                     if sample not in self.samples:
@@ -145,7 +145,6 @@ class Experiment:
 
         return df
 
-    
     def clusterize(self):
         """
         Create unique clusters from annotated features based on their names.
@@ -158,13 +157,24 @@ class Experiment:
                 cluster_names += feature.metabolite
 
         cluster_names = set(cluster_names)
-        
+
         # Create unique clusters
         self.clusters = {}
+
         for sample in self.samples.keys():
             self.clusters[sample] = {}
             for i,c in enumerate(cluster_names):
                 features = self.get_features_from_name(c, sample)
+
+                # Sort features by isotopologues
+                features.sort(key=lambda f: f.isotopologue)
+
+                # Assign the cluster_id to the features in the cluster
+                for feature in features:
+                    if not hasattr(feature, "in_cluster") or feature.in_cluster is None:
+                        feature.in_cluster = [] 
+                    feature.in_cluster.append(f"C{i}")  
+
                 self.clusters[sample][c] = Cluster(features=features, cluster_id=f"C{i}", name=c)
 
 
@@ -194,25 +204,30 @@ class Experiment:
         
         cluster_data = []
         for sample, clusters in self.clusters.items():
-            for cname, cluster in clusters.items():
-                for feature in cluster.features:
-                    idx = [i for i,j in enumerate(feature.metabolite) if j == cname][0]
-                    cluster_data.append({
-                        "cluster_id": cluster.cluster_id,
-                        "metabolite": cluster.name,
-                        "feature_id": feature.feature_id,
-                        "mz": feature.mz,
-                        "rt": feature.rt,
-                        "feature_potential_metabolite": feature.metabolite,
-                        "isotopologue": feature.isotopologue[idx],
-                        "mz_error": feature.mz_error[idx],
-                        "rt_error": feature.rt_error[idx],
-                        "sample": feature.sample,
-                        "intensity": feature.intensity,
-                        "status": cluster.status,
-                        "missing_isotopologue": cluster.missing_isotopologues,
-                        "duplicated_isotopologue": cluster.duplicated_isotopologues,
-                    })
+            if sample_name is None or sample_name == sample: # Filter the DataFrame by sample name if provided
+                for cname, cluster in clusters.items():
+                    for feature in cluster.features:
+                        idx = [i for i,j in enumerate(feature.metabolite) if j == cname][0]
+                        # Get the cluster_id of the features in another cluster
+                        other_clusters = [c.cluster_id for cluster_name, c in clusters.items() if feature in c.features and c.cluster_id != cluster.cluster_id]
+                        cluster_data.append({
+                            "cluster_id": cluster.cluster_id,
+                            "metabolite": cluster.name,
+                            "feature_id": feature.feature_id,
+                            "mz": feature.mz,
+                            "rt": feature.rt,
+                            "feature_potential_metabolite": feature.metabolite,
+                            "isotopologue": feature.isotopologue[idx],
+                            "mz_error": feature.mz_error[idx],
+                            "rt_error": feature.rt_error[idx],
+                            "sample": feature.sample,
+                            "intensity": feature.intensity,
+                            "status": cluster.status,
+                            "missing_isotopologue": cluster.missing_isotopologues,
+                            "duplicated_isotopologue": cluster.duplicated_isotopologues,
+                            # "in_cluster": feature.in_cluster,
+                            "in_another_cluster": other_clusters
+                        })
 
         # Create a DataFrame to summarize the annotated clusters
         df = pd.DataFrame(cluster_data)
@@ -232,6 +247,7 @@ class Experiment:
             if cluster.name == name:
                 return cluster
         return None
+    
 
     def clusters_summary(self, filename = None):
         """
