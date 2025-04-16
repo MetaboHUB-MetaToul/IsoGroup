@@ -19,6 +19,7 @@ class Database:
         self._delta_mz_hydrogen: float = _isodata["H"]["mass"][0]
 
         self.initialize_theoretical_features()
+        self.export_database(filename="Database_isotopic.tsv")
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -50,6 +51,33 @@ class Database:
                     intensity=None,
                     chemical=[chemical],
                     isotopologue=[i],
-                    metabolite=[chemical.label]
+                    metabolite=[chemical.label],
+                    formula = line["formula"],
                 )
                 self.features.append(feature)
+
+
+    def export_database(self, filename = None):
+        """
+        Create a DataFrame to summarize the database
+        Optionnal: Export the DataFrame to a tsv file if a filename is provided with samples in column
+        """
+
+        # Create a DataFrame to summarize the theoretical features
+        feature_data = []
+        for feature in self.features:
+            feature_data.append({
+                "mz": feature.mz,
+                "rt": feature.rt,
+                "metabolite": ', '.join(feature.metabolite),
+                "isotopologue": ', '.join(map(str, feature.isotopologue)),
+                "formula": feature.formula,
+                })
+
+        df = pd.DataFrame(feature_data)
+
+        # Export the DataFrame to a tsv file if a filename is provided
+        if filename:
+            df.to_csv(filename, sep="\t", index=False)
+
+            return df
