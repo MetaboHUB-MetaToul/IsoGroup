@@ -1,15 +1,6 @@
-[tool.poetry]
-name = "isogroup"
-version = "0.1.0"
-description = "Data processing tool for automatic extraction and annotation of isotopic information collected by mass spectrometry"
-authors = ["Loïc Le Grégam <legregam@insa-toulouse.fr>", ""]
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-pandas = "^2.2.3"
-
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = [
+    "setuptools",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
