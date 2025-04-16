@@ -9,6 +9,7 @@ def process(args):
 
     # load data file
     inputdata = Path(args.inputdata)
+
     if not inputdata.exists():
         msg = f"File {inputdata} does not exist"
         raise FileNotFoundError(msg)
@@ -40,8 +41,9 @@ def process(args):
     # Set working directory from output path
     if args.output:
         output = Path(args.output)
-        experiment.export_clusters(filename=output)
-        experiment.clusters_summary(filename=output.with_suffix('.summary.tsv'))
+        experiment.export_features(filename=output.with_suffix('.features.tsv'))
+        experiment.export_clusters(filename=output.with_suffix('.clusters.tsv'))
+        experiment.clusters_summary(filename=output.with_suffix('.clusters_summary.tsv'))
     else:
         msg = "No output file provided"
         raise ValueError(msg)
@@ -61,8 +63,8 @@ def parseArgs():
                         help='rt tolerance (e.g. "10")')
     parser.add_argument("-o", "--output", type=str,
                         help='output file for the clusters')
-    parser.add_argument("-v", "--verbose",
-                        help="flag to enable verbose logs", action='store_true')
+    # parser.add_argument("-v", "--verbose",
+    #                     help="flag to enable verbose logs", action='store_true')
     return parser
 
 

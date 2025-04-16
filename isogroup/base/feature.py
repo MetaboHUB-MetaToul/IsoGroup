@@ -2,7 +2,7 @@ from isogroup.base.misc import Misc
 
 class Feature:
 
-    def __init__(self, rt: float, mz: float, tracer: str, intensity:float|None, feature_id = None, formula: list|None=None, sample: str|None=None,
+    def __init__(self, rt: float, mz: float, tracer: str, intensity:float|None, feature_id = None, counter_formula: list|None=None, formula: list|None=None, sample: str|None=None,
                  chemical: list|None=None, metabolite: list|None=None, isotopologue: list|None=None, mz_error: list|None=None, rt_error: list|None=None, **extra_dims):
         self.rt = float(rt)
         self.mz = float(mz)
@@ -11,7 +11,8 @@ class Feature:
         self.intensity = intensity
         self.feature_id = feature_id
         self.chemical = chemical if chemical is not None else []
-        self.formula = [i.formula for i in self.chemical] if self.chemical is not None else formula #formula ou [] ?
+        self.counter_formula = [i.formula for i in self.chemical] if self.chemical is not None else formula #formula ou [] ?
+        self.formula = formula if formula is not None else []
         self.sample = sample
         self.mz_error = mz_error if mz_error is not None else []
         self.rt_error = rt_error if rt_error is not None else []
