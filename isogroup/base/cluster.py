@@ -1,4 +1,5 @@
-from typing import List, Union, Iterator, Self
+from __future__ import annotations
+from typing import List, Union, Iterator
 from isogroup.base.feature import Feature
 
 class Cluster:
@@ -21,29 +22,29 @@ class Cluster:
         return len(self.features)
 
 
-    def __add__(self, other: Union[Feature, Self]) -> Self:
-        """
-        Extend the cluster with either an extra feature or another cluster.
-        :param other: Feature or Cluster
-        :return: self
-        """
-        pass
+    # def __add__(self, other: Union[Feature, Self]) -> Self:
+    #     """
+    #     Extend the cluster with either an extra feature or another cluster.
+    #     :param other: Feature or Cluster
+    #     :return: self
+    #     """
+    #     pass
 
-    def __iadd__(self, other: Union[Feature, Self]) -> Self:
-        """
-        Extend the cluster with either an extra feature or another cluster.
-        :param other: Feature or Cluster
-        :return: self
-        """
-        pass
+    # def __iadd__(self, other: Union[Feature, Self]) -> Self:
+    #     """
+    #     Extend the cluster with either an extra feature or another cluster.
+    #     :param other: Feature or Cluster
+    #     :return: self
+    #     """
+    #     pass
 
-    def __remove__(self, other: Union[Feature, Self]) -> Self:
-        """
-        Remove a feature from the cluster
-        :param other: Feature
-        :return: self
-        """
-        pass
+    # def __remove__(self, other: Union[Feature, Self]) -> Self:
+    #     """
+    #     Remove a feature from the cluster
+    #     :param other: Feature
+    #     :return: self
+    #     """
+    #     pass
 
     def __contains__(self, item):
         pass

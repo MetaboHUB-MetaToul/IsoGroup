@@ -1,3 +1,4 @@
+from __future__ import annotations
 from isogroup.base.feature import Feature
 from isocor.base import LabelledChemical
 from isogroup.base.misc import Misc
@@ -6,7 +7,7 @@ import pandas as pd
 
 class Database:
 
-    def __init__(self, dataset: pd.DataFrame, tracer="13C"):
+    def __init__(self, dataset: pd.DataFrame, tracer: str):
         self.dataset = dataset
         self.features: list = []
         self.tracer: str = tracer
@@ -19,7 +20,7 @@ class Database:
         self._delta_mz_hydrogen: float = _isodata["H"]["mass"][0]
 
         self.initialize_theoretical_features()
-        self.export_database(filename="Database_isotopic.tsv")
+        self.export_database(filename="isotopic_db_export.tsv")
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -60,7 +61,7 @@ class Database:
     def export_database(self, filename = None):
         """
         Create a DataFrame to summarize the database
-        Optionnal: Export the DataFrame to a tsv file if a filename is provided with samples in column
+        Export the DataFrame to a tsv file if a filename is provided with samples in column
         """
 
         # Create a DataFrame to summarize the theoretical features

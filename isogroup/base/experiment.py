@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pandas as pd
 from isogroup.base.database import Database
 from isogroup.base.feature import Feature
