@@ -30,7 +30,7 @@ def process(args):
 
     db_data = pd.read_csv(database, sep=";")
 
-    database = Database(dataset=db_data, tracer="13C")
+    database = Database(dataset=db_data, tracer=tracer)
     data = pd.read_csv(inputdata, sep="\t")
     data = data.set_index(["mz", "rt", "id"])
 
@@ -40,9 +40,18 @@ def process(args):
 
     # Set working directory from output path
     if args.output:
-        output = Path(args.output)
+        output = Path(args.output).resolve()
+
+        # Create the output directory 
+        res_dir = output.parent / "res"
+        res_dir.mkdir(parents=True, exist_ok=True)
+
+        # Set the output path to the res directory
+        output = res_dir / output.name
+        print(f"Results will be saved to: {res_dir}")
+
         experiment.export_features(filename=output.with_suffix('.features.tsv'))
-        experiment.export_clusters(filename=output.with_suffix('.clusters.tsv'))
+        experiment.export_clusters(filename=output.with_suffix('.annotated_clusters.tsv'))
         experiment.clusters_summary(filename=output.with_suffix('.clusters_summary.tsv'))
     else:
         msg = "No output file provided"
