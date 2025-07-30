@@ -1,6 +1,6 @@
 import argparse
 from isogroup.base.database import Database
-from isogroup.base.experiment import Experiment
+from isogroup.base.targeted_experiment import Experiment
 from pathlib import Path
 import pandas as pd
 
