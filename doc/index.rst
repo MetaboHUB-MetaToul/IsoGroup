@@ -40,7 +40,6 @@ The code is open-source, and available on `GitHub <https://github.com/MetaboHUB-
 
    quickstart.rst
    tutorials.rst
-   .. cite.rst
 
 .. toctree::
    :maxdepth: 1
@@ -49,6 +48,5 @@ The code is open-source, and available on `GitHub <https://github.com/MetaboHUB-
    definitions.rst
    license.rst
    library_doc.rst
-   .. faq.rst
 
 .. todolist::
