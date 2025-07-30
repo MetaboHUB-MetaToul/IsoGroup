@@ -2,9 +2,34 @@ from __future__ import annotations
 from isogroup.base.misc import Misc
 
 class Feature:
+    """
+    Represents a mass spectrometry feature in the dataset.
+    A feature is characterized by its retention time (RT), mass-to-charge ratio (m/z), intensity.
+    It can also have associated chemical information, isotopologues, and other metadata.
+    
+    Args:
+        rt (float): Retention time of the feature.
+        mz (float): Mass-to-charge ratio of the feature.
+        tracer (str): Tracer code (e.g. "13C").
+        intensity (float|None): Intensity of the feature.
+        feature_id (int|None): Unique identifier for the feature.
+        counter_formula (list|None): Counter formula of the feature.
+        formula (list|None): Formula of the feature.
+        sample (str|None): Name of the sample where the feature was detected.
+        chemical (list|None): List of chemical objects associated with the feature.
+        metabolite (list|None): List of metabolite names associated with the feature.
+        isotopologue (list|None): List of isotopologues for the annotated feature.
+        mz_error (list|None): List of m/z errors for the annotated feature.
+        rt_error (list|None): List of retention time errors for the annotatedfeature.
+        extra_dims (dict): Additional dimensions to be added to the feature.
+        
+        """
 
     def __init__(self, rt: float, mz: float, tracer: str, intensity:float|None, feature_id = None, counter_formula: list|None=None, formula: list|None=None, sample: str|None=None,
                  chemical: list|None=None, metabolite: list|None=None, isotopologue: list|None=None, mz_error: list|None=None, rt_error: list|None=None, **extra_dims):
+        """
+        Initialize a Feature instance with mass spectrometry data and annotated information.
+        """
         self.rt = float(rt)
         self.mz = float(mz)
         self.tracer = tracer

@@ -65,8 +65,6 @@ It is a CSV file with the following columns:
 
 Annotation parameters
 ================================================================================
-THIS IS A TEST
-
 
 IsoGroup provides options to adapt to many situations that can be encountered
 in terms of isotopic tracer, mass accuracy, quality of data processing, etc.

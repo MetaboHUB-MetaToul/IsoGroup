@@ -48,7 +48,7 @@ The code is open-source, and available on `GitHub <https://github.com/MetaboHUB-
 
    definitions.rst
    license.rst
-   .. library_doc.rst
+   library_doc.rst
    .. faq.rst
 
 .. todolist::

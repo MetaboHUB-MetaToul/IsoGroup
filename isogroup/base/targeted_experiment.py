@@ -7,13 +7,23 @@ from isogroup.base.misc import Misc
 
 
 class Experiment:
+    """
+    Represents a targeted mass spectrometry experiment.
+    Used to group and annotate detected features from an experimental dataset using a reference database with isotopic tracer information.
+
+    Args:
+        dataset (pd.DataFrame): DataFrame containing the experimental data.
+        database (Database): Database object used for annotation of features.
+        tracer (str|None): Tracer code (e.g. "13C"). If None, no tracer-based annotation is applied.
+    """
 
     def __init__(self, dataset: pd.DataFrame, database: 'Database' = None, tracer=None):
+        """Initialize the experiment with dataset, annotated database, and tracer information."""
         self.dataset = dataset
         self.database = database
         self.samples: dict = {} 
-        self._mz_tol: None | float = None
-        self._rt_tol: None | float = None
+#        self._mz_tol: None | float = None
+#        self._rt_tol: None | float = None
 
         self._tracer: None | str = tracer
         self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
@@ -22,24 +32,43 @@ class Experiment:
 
     @property
     def rt_tol(self):
+        """
+        Returns the retention time tolerance used for feature annotation.
+        :return: float        
+        """
         return self._rt_tol
 
     @property
     def tracer(self):
+        """
+        Returns the tracer used for the experiment.
+        :return: str | None
+        """
         return self._tracer
 
     @property
     def tracer_element(self):
+        """
+        Returns the tracer element used in the experiment.
+        :return: str | None
+        """
         return self._tracer_element
 
     @property
     def mz_tol(self):
+        """
+        Returns the m/z tolerance used for feature annotation.
+        :return: float | None
+        """
         return self._mz_tol
     
 
     def initialize_experimental_features(self):
         """
-        Initialize the experimental features from the dataset
+        Initialize Feature objects from the dataset and organize them by sample.
+        Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
+        Populates `self.samples` as a dictionary of the form:
+            {sample_name: {feature_id: Feature object}}
         """
         for idx, _ in self.dataset.iterrows():
             mz = idx[0]
@@ -67,8 +96,11 @@ class Experiment:
 
     def annotate_features(self, mz_tol, rt_tol):
         """
-        Annotate the experiment features with the database within a given tolerance
-        Calculate the mz error and the rt error
+        Annotate experimental features by matching them with the database features within specified m/z and retention time tolerances.
+        Also stores m/Z and RT errors for matched feature.
+
+        :param mz_tol: m/z tolerance in ppm
+        :param rt_tol: retention time tolerance in seconds
         """
 
         for sample in self.samples.values():
@@ -98,8 +130,12 @@ class Experiment:
 
     def annotate_experiment(self, mz_tol, rt_tol):
         """
-        Annotate the experiment features with the database within a given tolerance
-        MultiIndex DataFrame
+        Run the full annotation process for the experiment.
+        This includes:
+        - Initializing Feature objects from the dataset.
+        - Matching experimental features to the database within specified tolerances.
+        :param mz_tol: m/z tolerance in ppm
+        :param rt_tol: retention time tolerance in seconds
         """
         # Initialize the experimental features from the dataset
         self.initialize_experimental_features()
@@ -111,9 +147,10 @@ class Experiment:
 
     def export_features(self, filename = None, sample_name = None):
         """
-        Create a DataFrame to summarize the annotated data
-        Optionnal: Export the DataFrame to a tsv file if a filename is provided with samples in column
-        Optionnal: Export the Dataframe of only one sample if a sample name is provided
+        Summarize annotated features into a DataFrame and optionally export it to a tsv file.
+        :param filename: Name of the file to export the summary to
+        :param sample_name: Name of the sample to filter the DataFrame by, if provided
+        :return: pd.DataFrame with the summary of the annotated features
         """
 
         # Create a DataFrame to summarize the experimental features
@@ -148,7 +185,9 @@ class Experiment:
 
     def clusterize(self):
         """
-        Create unique clusters from annotated features based on their names.
+        Group features by metabolite names within each sample and assign a unique cluster ID to each group.
+        Populates `self.clusters` as a dictionary of the form:
+            {sample_name: {cluster_id: Cluster object}}
         """
         cluster_names = []
         
@@ -181,7 +220,10 @@ class Experiment:
 
     def get_features_from_name(self, name, sample_name:str):
         """
-        Get a feature from the experiment by its name, in a given sample if provided
+        Retrieve all features in a given sample that are annotated with a specific metabolite name.
+        :param name: Name of the metabolite to retrieve features for
+        :param sample_name: Name of the sample to retrieve features from
+        :return: List of Feature objects that match the metabolite name in the specified sample
         """
         features = []
         for feature in self.samples[sample_name].values():
@@ -192,9 +234,10 @@ class Experiment:
     
     def export_clusters(self, filename = None, sample_name = None):
         """
-        Create a DataFrame to summarize the annotated clusters
-        Optionnal: Export the DataFrame to a tsv file if a filename is provided
-        Optionnal: Export the Dataframe of only one sample if a sample name is provided
+        Summarize annotated clusters into a DataFrame and optionally export it to a tsv file.
+        :param filename: Name of the file to export the summary to
+        :param sample_name: Name of the sample to filter the DataFrame by, if provided
+        :return: pd.DataFrame with the summary of the annotated clusters
         """
         
         # Check if the sample name is in the DataFrame
@@ -243,6 +286,9 @@ class Experiment:
     def get_clusters_from_name(self, name, sample_name:str):
         """
         Get a cluster from the experiment by its name, in a given sample if provided
+        :param name: Name of the cluster to retrieve
+        :param sample_name: Name of the sample to retrieve the cluster from
+        :return: Cluster object if found, None otherwise
         """
         for cluster in self.clusters[sample_name].values():
             if cluster.name == name:
@@ -253,6 +299,8 @@ class Experiment:
     def clusters_summary(self, filename = None):
         """
         Export a tsv file with a summary of the clusters
+        :param filename: Name of the file to export the summary to
+        :return: pd.DataFrame with the summary of the clusters
         """
         # List to store the cluster summary data
         cluster_summary = []

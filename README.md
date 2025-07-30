@@ -6,7 +6,7 @@
 
 
 ## What is IsoGroup?
-**IsoCor is a scientific software dedicated to the processing of isotopic data from untargeted mass spectrometry (MS) labeling experiments**.
+**IsoGroup is a scientific software dedicated to the processing of isotopic data from untargeted mass spectrometry (MS) labeling experiments**.
 IsoGroup groups mass features (m/z, retention time, intensity) identified as :ref:`isotopologues <isotopologues>` into :ref:`isotopic clusters <isotopic clusters>` based on the tracer element used in the experiment.
 It also generates a database of isotopologues specific to the selected tracer, which is used to annotate the clusters.
 The output of IsoGroup is a list of isotopic clusters (m/z, retention time, intensity, isotopologues). 
