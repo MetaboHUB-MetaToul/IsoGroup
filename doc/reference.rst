@@ -13,7 +13,7 @@ Reference
 :file:`database.py`
 -----------------------
 
-.. automodule:: isocor.base.database
+.. automodule:: isogroup.base.database
    :members:
    :undoc-members:
    :show-inheritance:
@@ -22,7 +22,7 @@ Reference
 :file:`cluster.py`
 -----------------------
 
-.. automodule:: isocor.base.cluster
+.. automodule:: isogroup.base.cluster
    :members:
    :undoc-members:
    :show-inheritance:
@@ -31,7 +31,7 @@ Reference
 :file:`targeted_experiment.py`
 -----------------------
 
-.. automodule:: isocor.base.targeted_experiment
+.. automodule:: isogroup.base.targeted_experiment
    :members:
    :undoc-members:
    :show-inheritance:
@@ -40,7 +40,7 @@ Reference
 :file:`misc.py`
 -----------------------
 
-.. automodule:: isocor.base.misc
+.. automodule:: isogroup.base.misc
    :members:
    :undoc-members:
    :show-inheritance:
