@@ -37,7 +37,7 @@ Reference
    :show-inheritance:
 
 
-:file:`misc.py
+:file:`misc.py`
 -----------------------
 
 .. automodule:: isocor.base.misc
