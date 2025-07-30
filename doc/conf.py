@@ -100,6 +100,9 @@ pygments_style = 'sphinx'
 # sphinx.ext.todo options
 todo_include_todos = True
 
+
+nbsphinx_execute = 'never'
+
 # -- Options for HTML output ---------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

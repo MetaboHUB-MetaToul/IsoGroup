@@ -68,7 +68,7 @@ class Experiment:
         Initialize Feature objects from the dataset and organize them by sample.
         Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
         Populates `self.samples` as a dictionary of the form:
-            {sample_name: {feature_id: Feature object}}
+        {sample_name: {feature_id: Feature object}}
         """
         for idx, _ in self.dataset.iterrows():
             mz = idx[0]
@@ -187,7 +187,7 @@ class Experiment:
         """
         Group features by metabolite names within each sample and assign a unique cluster ID to each group.
         Populates `self.clusters` as a dictionary of the form:
-            {sample_name: {cluster_id: Cluster object}}
+        {sample_name: {cluster_id: Cluster object}}
         """
         cluster_names = []
         
