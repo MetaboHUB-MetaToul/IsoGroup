@@ -269,17 +269,17 @@ class UntargetedExperiment:
                     records.append(record)
         
         df = pd.DataFrame.from_records(records)
-        df.fillna("NaN", inplace=True)
+        df.fillna(np.nan, inplace=True)
         return df
     
 
-    def export_clusters_to_csv(self, filepath: str):
+    def export_clusters_to_tsv(self, filepath: str):
         """
         Export the clusters to a CSV file.
         :param filepath: str
         """
         df = self.clusters_to_dataframe()
-        df.to_csv(filepath, index=False)
+        df.to_csv(filepath, sep="\t", index=False)
                     
 
 
