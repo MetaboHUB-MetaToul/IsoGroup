@@ -1,5 +1,6 @@
 import pandas as pd
-import math
+import numpy as np
+import bisect
 from isogroup.base.feature import Feature
 from isogroup.base.cluster import Cluster
 from isogroup.base.misc import Misc
@@ -29,10 +30,6 @@ class UntargetedExperiment:
 
         self.features: dict = {}  # {sample_name: {feature_id: Feature object}}
         self.clusters: dict = {}  # {sample_name: [Cluster objects]}
-        #self.clusters: list[Cluster] = []
-        #self.samples: list[str] = dataset['Sample'].unique().tolist() if dataset is not None and 'Sample' in dataset.columns else []
-
-
 
     @property
     def RTwindow(self) -> float|None:
@@ -66,6 +63,19 @@ class UntargetedExperiment:
         """
         return self._tracer_element
     
+    def build_final_clusters(self, RTwindow: float, ppm_tolerance: float):
+        """
+        Build and deduplicate clusters of features based on retention time and m/z tolerances.
+        This is a convenience method that combines the initialization of features,
+        building of clusters, and deduplication into a single step.
+        :param RTwindow: float
+        :param ppm_tolerance: float
+        :return: None
+        """
+        self.initialize_experimental_features()
+        self.build_clusters(RTwindow=RTwindow, ppm_tolerance=ppm_tolerance)
+        self.deduplicate_clusters()
+
 
     def initialize_experimental_features(self):
         """
@@ -74,6 +84,13 @@ class UntargetedExperiment:
         Populates `self.samples` as a dictionary of the form:
         {sample_name: {feature_id: Feature object}}
         """
+        if self.dataset is None:
+            raise ValueError("Dataset is not provided.")
+        
+        # required_columns = {"mz", "rt", "id"}
+        # if not required_columns.issubset(self.dataset.columns):
+        #     raise ValueError(f"Dataset must contain the following columns: {required_columns}")
+        
         for idx, _ in self.dataset.iterrows():
             mz = idx[0]
             rt = idx[1]
@@ -98,18 +115,6 @@ class UntargetedExperiment:
                     self.features[sample][id] = feature
 
 
-    def build_final_clusters(self, RTwindow: float, ppm_tolerance: float):
-        """
-        Build and deduplicate clusters of features based on retention time and m/z tolerances.
-        This is a convenience method that combines `build_clusters` and `deduplicate_clusters`.
-        :param RTwindow: float
-        :param ppm_tolerance: float
-        """
-        self.initialize_experimental_features()
-        self.build_clusters(RTwindow=RTwindow, ppm_tolerance=ppm_tolerance)
-        self.deduplicate_clusters()
-
-
     def build_clusters(self, RTwindow: float, ppm_tolerance: float):
         """
         Build clusters of features based on retention time and m/z tolerances.
@@ -127,59 +132,51 @@ class UntargetedExperiment:
         self.clusters = {}
 
         for sample_name, features in self.features.items():
-            all_features = list(features.values())
-            all_features.sort(key=lambda f: f.rt)
+            all_features = sorted(features.values(), key=lambda f: f.rt)
+            rts = [f.rt for f in all_features]
 
             clusters = {}
-            cluster_id = "C0"
+            cluster_id = 0
 
-            for base_feature in all_features:
+            # For each feature, find potential isotopologues within the RT window
+            for i, base_feature in enumerate(all_features):
+                left_bound = bisect.bisect_left(rts, base_feature.rt - RTwindow)
+                right_bound = bisect.bisect_right(rts, base_feature.rt + RTwindow)
+
+                candidates = all_features[left_bound:right_bound]
                 group = {base_feature}
 
-                for candidate in all_features:
-
-                    rt_diff = abs(candidate.rt - base_feature.rt)
-                    #mz_diff = abs(candidate.mz - base_feature.mz)
-
-                    if rt_diff > RTwindow:
+                for candidate in candidates:
+                    if candidate == base_feature:
                         continue
 
-                    # Calculate the estimated isotopologue number based on the m/z difference and tracer shift
-                    n = round((candidate.mz - base_feature.mz) / self.mzshift_tracer)
-
-                    #print(self.mzshift_tracer)
-                    
-                    # Limit the isotopologue number to a reasonable range based on the m/z of the base feature
+                    iso_number = round((candidate.mz - base_feature.mz) / self.mzshift_tracer)
                     max_iso = Misc.get_max_isotopologues_for_mz(base_feature.mz, self.tracer_element)
-
-                    if abs(n) > max_iso :
+                    
+                    if abs(iso_number) > max_iso:
                         continue
 
-                    # Expected m/z difference based on the tracer
-                    expected_mz = base_feature.mz + n * self.mzshift_tracer
-
-                    # Regarde si la masse du candidat est proche de la masse attendue +/- la tolérance ppm
+                    expected_mz = base_feature.mz + iso_number * self.mzshift_tracer
                     if abs(expected_mz - candidate.mz) <= (expected_mz * ppm_tolerance / 1e6):
                         group.add(candidate)
 
                 if len(group) > 1:
+                    cluster_id = f"C{cluster_id}"
                     group_sorted = sorted(list(group), key=lambda f: f.mz)
                     min_mz = group_sorted[0].mz
 
                     for f in group_sorted:
-                        f.isotopologue = [round((f.mz - min_mz) / self.mzshift_tracer)]
+                        f.cluster_isotopologue[cluster_id] = round((f.mz - min_mz) / self.mzshift_tracer) # Specific to clusters
 
                         if cluster_id not in f.in_cluster:
                             f.in_cluster.append(cluster_id)
-
                     clusters[cluster_id] = Cluster(cluster_id=cluster_id, features=group_sorted)
-                    # Prepare the next cluster ID
-                    cluster_id = f"C{int(cluster_id[1:]) + 1}"
+                    cluster_id = int(cluster_id[1:]) + 1
 
             self.clusters[sample_name] = clusters
 
 
-    def deduplicate_clusters(self, ):
+    def deduplicate_clusters(self):
         """
         Deduplicate clusters to remove redundancies after initial clustering.
         Identical clusters (same features) are merged into a single cluster.
@@ -205,71 +202,74 @@ class UntargetedExperiment:
 
                 unique_clusters[sample_name][cid] = Cluster(cluster_id=cid, features=list(cluster.features))
 
-                # # Construct mapping of features to their new cluster IDs
-                # features_to_clusters = {}
-                # for sample_clusters in unique_clusters.values():
-                #     for cluster in sample_clusters.values():
-                #         for f in cluster.features:
-                #             features_to_clusters.setdefault(f.feature_id, set()).add(cluster.cluster_id)
-
-                # # Update each feature's cluster membership
-                # for sample_clusters in unique_clusters.values():
-                #     for cluster in sample_clusters.values():
-                #         cluster.features.sort(key=lambda f: f.mz)
-                #         min_mz = cluster.features[0].mz
-
-                #     for f in cluster.features:
-                #         f.isotopologue = [round((f.mz - min_mz) / self.mzshift_tracer)]
-
-                #         f.in_cluster = [cid for cid, c in sample_clusters.items() if f in c.features]
-                #         cluster.also_in[f.feature_id] = [cid for cid in f.in_cluster if cid != cluster.cluster_id]
-
-        # Étape 2 : reconstruire in_clusters et also_in par sample
-        for sample_name, sample_clusters in unique_clusters.items():
-            # mapping feature -> clusters dans ce sample seulement
-            feature_to_clusters = {}
-            for cid, cluster in sample_clusters.items():
+                # Construct mapping of features to their new cluster IDs
+        features_to_clusters = {}
+        for sample_clusters in unique_clusters.values():
+            for cluster in sample_clusters.values():
                 for f in cluster.features:
-                    feature_to_clusters.setdefault(f.feature_id, set()).add(cid)
+                    features_to_clusters.setdefault(f.feature_id, set()).add(cluster.cluster_id)
 
-            for cid, cluster in sample_clusters.items():
+                # Update each feature's cluster membership
+        for sample_clusters in unique_clusters.values():
+            for cluster in sample_clusters.values():
                 cluster.features.sort(key=lambda f: f.mz)
                 min_mz = cluster.features[0].mz
+
                 for f in cluster.features:
-                    # isotopologue par rapport à la plus petite mz du cluster
-                    f.isotopologue = round((f.mz - min_mz) / float(self.mzshift_tracer))
-                    # clusters dans lesquels cette feature apparaît
-                    f.in_cluster = list(feature_to_clusters[f.feature_id])
-                    # also_in = tous les clusters sauf celui-ci
-                    f.also_in = [c for c in f.in_cluster if c != cid]
+                    f.in_cluster = list(features_to_clusters.get(f.feature_id, []))
+                    f.also_in = [cid for cid in f.in_cluster if cid != cluster.cluster_id]
+                    f.cluster_isotopologue[cluster.cluster_id] = round((f.mz - min_mz) / self.mzshift_tracer) # Specific to clusters
 
         self.clusters = unique_clusters
 
-    
+
     def clusters_to_dataframe(self) -> pd.DataFrame:
         """
         Convert the clusters into a pandas DataFrame for easier analysis and export.
         Each row in the DataFrame represents a feature within a cluster, along with relevant metadata.
+        Missing isotopologues are represented as empty rows (Nan)
         :return: pd.DataFrame
         """
         records = []
         for sample_name, clusters in self.clusters.items():
             for cluster in clusters.values():
-                for feature in cluster.features:
-                    record = {
-                        "ClusterID": cluster.cluster_id,
-                        "FeatureID": feature.feature_id,
-                        "RT": feature.rt,
-                        "m/z": feature.mz,
-                        "sample": feature.sample,
-                        "Intensity": feature.intensity,
-                        "Isotopologue": feature.isotopologue,
-                        "InClusters": feature.in_cluster,
-                        "AlsoIn": feature.also_in
-                    }
+                min_mz = cluster.lowest_mz
+                max_mz = cluster.highest_mz
+                max_iso = round((max_mz - min_mz) / self.mzshift_tracer)
+
+                iso_map = {f.cluster_isotopologue.get(cluster.cluster_id, None): f for f in cluster.features}
+                for iso in range(max_iso + 1):
+                    if iso in iso_map and iso_map[iso] is not None:
+                        feature = iso_map[iso]
+                        record = {
+                            "ClusterID": cluster.cluster_id,
+                            "FeatureID": feature.feature_id,
+                            "RT": feature.rt,
+                            "m/z": feature.mz,
+                            "sample": feature.sample,
+                            "Intensity": feature.intensity,
+                            #"Isotopologue": feature.isotopologue,
+                            "Isotopologue": iso,
+                            "InClusters": feature.in_cluster,
+                            "AlsoIn": feature.also_in
+                        }
+                    else:
+                        record = {
+                            "ClusterID": cluster.cluster_id,
+                            "FeatureID": None,
+                            "RT": None,
+                            "m/z": None,
+                            "sample": sample_name,
+                            "Intensity": None,
+                            "Isotopologue": iso,
+                            "InClusters": [],
+                            "AlsoIn": []
+                        }
+
                     records.append(record)
         
         df = pd.DataFrame.from_records(records)
+        df.fillna("NaN", inplace=True)
         return df
     
 
@@ -281,8 +281,5 @@ class UntargetedExperiment:
         df = self.clusters_to_dataframe()
         df.to_csv(filepath, index=False)
                     
-
-
-
 
 
