@@ -26,7 +26,7 @@ class Feature:
         """
 
     def __init__(self, rt: float, mz: float, tracer: str, intensity:float|None, feature_id = None, counter_formula: list|None=None, formula: list|None=None, sample: str|None=None,
-                 chemical: list|None=None, metabolite: list|None=None, isotopologue: list|None=None, mz_error: list|None=None, rt_error: list|None=None, **extra_dims):
+                 chemical: list|None=None, metabolite: list|None=None, isotopologue: dict|None=None, mz_error: list|None=None, rt_error: list|None=None, **extra_dims):
         """
         Initialize a Feature instance with mass spectrometry data and annotated information.
         """
@@ -43,7 +43,8 @@ class Feature:
         self.mz_error = mz_error if mz_error is not None else []
         self.rt_error = rt_error if rt_error is not None else []
         self.metabolite = [i.label for i in self.chemical] if self.chemical is not None else metabolite #metabolite ou [] ?
-        self.isotopologue = isotopologue if isotopologue is not None else []
+        self.isotopologue = isotopologue if isotopologue is not None else [] # Targeted version
+        self.cluster_isotopologue = isotopologue if isotopologue is not None else {} # Test 10/09 for Untargeted, dict, iso associated to the cluster -> check impact on Targeted version
         self.__dict__.update(extra_dims)
         self.is_adduct: tuple[bool, str] = (False, "")
         self.in_cluster = []
