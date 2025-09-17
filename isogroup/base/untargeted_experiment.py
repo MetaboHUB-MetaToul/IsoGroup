@@ -63,7 +63,7 @@ class UntargetedExperiment:
         """
         return self._tracer_element
     
-    def build_final_clusters(self, RTwindow: float, ppm_tolerance: float):
+    def build_final_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int | None = None):
         """
         Build and deduplicate clusters of features based on retention time and m/z tolerances.
         This is a convenience method that combines the initialization of features,
@@ -73,8 +73,8 @@ class UntargetedExperiment:
         :return: None
         """
         self.initialize_experimental_features()
-        self.build_clusters(RTwindow=RTwindow, ppm_tolerance=ppm_tolerance)
-        self.deduplicate_clusters()
+        self.build_clusters(RTwindow=RTwindow, ppm_tolerance=ppm_tolerance, max_atoms=max_atoms)
+        self.deduplicate_clusters(max_atoms=max_atoms)
 
 
     def initialize_experimental_features(self):
@@ -115,7 +115,7 @@ class UntargetedExperiment:
                     self.features[sample][id] = feature
 
 
-    def build_clusters(self, RTwindow: float, ppm_tolerance: float):
+    def build_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int | None = None):
         """
         Build clusters of features based on retention time and m/z tolerances.
         Features within the specified RT window and ppm tolerance are grouped into clusters.
@@ -144,6 +144,7 @@ class UntargetedExperiment:
                 right_bound = bisect.bisect_right(rts, base_feature.rt + RTwindow)
 
                 candidates = all_features[left_bound:right_bound]
+
                 group = {base_feature}
 
                 for candidate in candidates:
@@ -151,10 +152,27 @@ class UntargetedExperiment:
                         continue
 
                     iso_number = round((candidate.mz - base_feature.mz) / self.mzshift_tracer)
-                    max_iso = Misc.get_max_isotopologues_for_mz(base_feature.mz, self.tracer_element)
-                    
+
+                    # Define a maximum number of tracer atoms if specified
+                    if max_atoms is None:
+                        max_iso = Misc.get_max_isotopologues_for_mz(base_feature.mz, self.tracer_element)
+                    else:
+                        max_iso = max_atoms
+
                     if abs(iso_number) > max_iso:
                         continue
+                        
+                    # if max_atoms is not None:
+                    #     if abs(iso_number) > max_atoms:
+                    #         continue
+
+                    # else:
+                    #     max_iso = Misc.get_max_isotopologues_for_mz(base_feature.mz, self.tracer_element)
+                    #     if 
+                    
+
+                    # if abs(iso_number) > max_iso:
+                    #     continue
 
                     expected_mz = base_feature.mz + iso_number * self.mzshift_tracer
                     if abs(expected_mz - candidate.mz) <= (expected_mz * ppm_tolerance / 1e6):
@@ -176,7 +194,7 @@ class UntargetedExperiment:
             self.clusters[sample_name] = clusters
 
 
-    def deduplicate_clusters(self):
+    def deduplicate_clusters(self, max_atoms: int | None = None):
         """
         Deduplicate clusters to remove redundancies after initial clustering.
         Identical clusters (same features) are merged into a single cluster.
@@ -186,11 +204,10 @@ class UntargetedExperiment:
         new_cluster_id = 0
         signature_to_cid = {} # Map cluster signatures to new cluster IDs
 
+        # Step 1 : Deduplicate clusters based on their feature composition
         for sample_name, clusters in self.clusters.items():
             unique_clusters[sample_name] = {}
             for cluster in clusters.values():
-
-                # Create a signature for the cluster based on its feature IDs
                 signature = frozenset(f.feature_id for f in cluster.features)
 
                 if signature in signature_to_cid:
@@ -202,23 +219,31 @@ class UntargetedExperiment:
 
                 unique_clusters[sample_name][cid] = Cluster(cluster_id=cid, features=list(cluster.features))
 
-                # Construct mapping of features to their new cluster IDs
+        # Step 2 : Build a mapping of features to all clusters they belong to
         features_to_clusters = {}
         for sample_clusters in unique_clusters.values():
             for cluster in sample_clusters.values():
                 for f in cluster.features:
                     features_to_clusters.setdefault(f.feature_id, set()).add(cluster.cluster_id)
 
-                # Update each feature's cluster membership
+        # Step 3 : Update feature's cluster memberships, isotopologue numbers, and also_in lists and filter by max_atoms if specified
         for sample_clusters in unique_clusters.values():
             for cluster in sample_clusters.values():
                 cluster.features.sort(key=lambda f: f.mz)
                 min_mz = cluster.features[0].mz
 
+                filtered_features = [] #
                 for f in cluster.features:
+                    iso_number = round((f.mz - min_mz) / self.mzshift_tracer) #
+                    max_iso = Misc.get_max_isotopologues_for_mz(min_mz, self.tracer_element) if max_atoms is None else max_atoms #
+                    if iso_number > max_iso: #
+                        continue #
                     f.in_cluster = list(features_to_clusters.get(f.feature_id, []))
                     f.also_in = [cid for cid in f.in_cluster if cid != cluster.cluster_id]
-                    f.cluster_isotopologue[cluster.cluster_id] = round((f.mz - min_mz) / self.mzshift_tracer) # Specific to clusters
+                    f.cluster_isotopologue[cluster.cluster_id] = iso_number
+                    #round((f.mz - min_mz) / self.mzshift_tracer) # Specific to clusters
+                    filtered_features.append(f) #
+                cluster.features = filtered_features #
 
         self.clusters = unique_clusters
 
