@@ -44,3 +44,12 @@ Reference
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+:file:`untargeted_experiment.py`
+-----------------------
+
+.. automodule:: isogroup.base.untargeted_experiment
+   :members:
+   :undoc-members:
+   :show-inheritance:

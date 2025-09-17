@@ -64,12 +64,12 @@ Here after the available options with their full names are enumerated and detail
    :prog: isogroup
    :nodescription:
 
-IsoGroup proceeds automatically to the extraction and annotation of isotopic clusters.
+.. IsoGroup proceeds automatically either to the without a priori extraction or the annotation of isotopic clusters.
+IsoGroup automatically carries out either untargeted isotopic clustering or targeted annotation of mass features
 
-.. warning:: The annotation options must be carefully selected to ensure reliable interpretations of labeling data, as detailed in the :ref:`Tutorials`.
+.. warning:: The annotation and clustering options must be carefully selected to ensure reliable interpretations of labeling data, as detailed in the :ref:`Tutorials`.
 
-.. seealso:: Tutorial :ref:`First time using IsoGroup` has example data
-            that you can use to test your installation.
+.. seealso:: Tutorial :ref:`First time using IsoGroup` has example data that you can use to test your installation.
 
 
 Library

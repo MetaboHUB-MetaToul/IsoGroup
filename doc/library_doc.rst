@@ -13,4 +13,5 @@ Jupyter Notebooks or in your own software.
    :maxdepth: 2
 
    showcase_targetedisogroup.ipynb
+   showcase_untargetedisogroup.ipynb
    reference.rst
