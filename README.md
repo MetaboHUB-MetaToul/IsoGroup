@@ -7,9 +7,15 @@
 
 ## What is IsoGroup?
 **IsoGroup is a scientific software dedicated to the processing of isotopic data from untargeted mass spectrometry (MS) labeling experiments**.
-IsoGroup groups mass features (m/z, retention time, intensity) identified as :ref:`isotopologues <isotopologues>` into :ref:`isotopic clusters <isotopic clusters>` based on the tracer element used in the experiment.
-It also generates a database of isotopologues specific to the selected tracer, which is used to annotate the clusters.
-The output of IsoGroup is a list of isotopic clusters (m/z, retention time, intensity, isotopologues). 
+It is suitable for diverse applications including annotation, isotopic profiling, quantification, and fluxomics experiments.
+IsoGroup supports two complementary modes of data processing: 
+* In **targeted** mode, IsoGroup performs **annotation** of isotopic clusters based on a user-provided database of compounds.
+  Mass features (m/z, retention time, intensity) are matched to known metabolites and isotopologues according to their exact mass and retention time.
+  A database of isotopologues specific to the selected tracer is generated and used for the annotation.
+* In **untargeted** mode, IsoGroup performs **clustering** by grouping MS features identified as :ref:`isotopologues <isotopologues>` into :ref:`isotopic clusters <isotopic clusters>` **without prior knowledge**, based solely on the characteristic mass differences induced by the tracer element.
+
+
+The output of IsoGroup is a list of isotopic clusters with their m/z, retention time, intensity, and isotopologues. 
 
 The code is open-source, and available under a GPLv3 license.
 
