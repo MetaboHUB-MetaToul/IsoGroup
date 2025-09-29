@@ -6,7 +6,7 @@ from isogroup.base.cluster import Cluster
 from isogroup.base.misc import Misc
 
 
-class Experiment:
+class TargetedExperiment:
     """
     Represents a targeted mass spectrometry experiment.
     Used to group and annotate detected features from an experimental dataset using a reference database with isotopic tracer information.
