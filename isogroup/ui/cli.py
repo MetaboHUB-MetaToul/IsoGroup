@@ -1,6 +1,6 @@
 import argparse
 from isogroup.base.database import Database
-from isogroup.base.targeted_experiment import Experiment
+from isogroup.base.targeted_experiment import TargetedExperiment
 from isogroup.base.untargeted_experiment import UntargetedExperiment
 from pathlib import Path
 import pandas as pd
@@ -35,7 +35,7 @@ def process_targeted(args):
 
     data = pd.read_csv(inputdata, sep="\t").set_index(["mz", "rt", "id"])
 
-    experiment = Experiment(dataset=data, database=database, tracer=args.tracer)
+    experiment = TargetedExperiment(dataset=data, database=database, tracer=args.tracer)
     experiment.annotate_experiment(mz_tol=args.mztol, rt_tol=args.rttol)
     experiment.clusterize()
 
@@ -70,7 +70,7 @@ def process_untargeted(args):
         raise FileNotFoundError(f"File {inputdata} does not exist")
     data = pd.read_csv(inputdata, sep="\t").set_index(["mz", "rt", "id"])
     experiment = UntargetedExperiment(dataset=data, tracer=args.tracer)
-    experiment.build_final_clusters(RTwindow=args.rt_window, ppm_tolerance=args.ppm_tol)
+    experiment.build_final_clusters(RTwindow=args.rt_window, ppm_tolerance=args.ppm_tol, max_atoms=args.max_atoms)
 
     res_dir = Path(args.inputdata).parent / "res"
     res_dir.mkdir(parents=True, exist_ok=True)
@@ -98,7 +98,7 @@ def parseArgs():
     parser.add_argument("inputdata", help="measurements file to process")
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
-    parser.add_argument("--mode", type=str, choices=['targeted', 'untargeted'], required=True,
+    parser.add_argument("-m", "--mode", type=str, choices=['targeted', 'untargeted'], required=True,
                         help='mode of operation: "targeted" or "untargeted"')
     parser.add_argument("-o", "--output", type=str,
                         help='output file for the clusters')
@@ -116,6 +116,8 @@ def parseArgs():
                         help='mz tolerance in ppm for clustering (e.g. "5"), required for untargeted')
     parser.add_argument("--rt_window", type=float,
                         help='rt tolerance for clustering (e.g. "10"), required for untargeted')
+    parser.add_argument("--max_atoms", type=int,default=None,
+                        help='maximum number of tracer atoms in a molecule (e.g. "20"), optional for untargeted')
     
     return parser
 
@@ -126,7 +128,7 @@ def start_cli():
     parser = parseArgs()
     args = parser.parse_args()
 
-    # Define the mode
+    # Define the mode of operation
     if args.mode == 'targeted':
         # Check required args for targeted
         if not all(hasattr(args, attr) for attr in ['D', 'mztol', 'rttol']):
