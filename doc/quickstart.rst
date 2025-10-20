@@ -50,11 +50,21 @@ Usage
 Command Line Interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To process your data, type in a terminal:
+IsoGroup can be executed from the command line interface (CLI) to perform either **untargeted isotopic clustering** or **targeted annotation**.
+
+You can now use **two separate command-line executables** depending on your needs:
+
+- **Untargeted isotopic clustering**:
 
 .. code-block:: bash
 
-  isogroup [command line options]
+  isogroup_untargeted [command line options]
+
+- **Targeted annotation using a database**:
+
+.. code-block:: bash
+
+  isogroup_targeted [command line options]
 
 Here after the available options with their full names are enumerated and detailed.
 
@@ -64,7 +74,7 @@ Here after the available options with their full names are enumerated and detail
    :prog: isogroup
    :nodescription:
 
-.. IsoGroup proceeds automatically either to the without a priori extraction or the annotation of isotopic clusters.
+
 IsoGroup automatically carries out either untargeted isotopic clustering or targeted annotation of mass features
 
 .. warning:: The annotation and clustering options must be carefully selected to ensure reliable interpretations of labeling data, as detailed in the :ref:`Tutorials`.
