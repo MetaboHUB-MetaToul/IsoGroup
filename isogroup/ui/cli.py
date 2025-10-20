@@ -11,6 +11,7 @@ import pandas as pd
 # -------------------
 
 def process_targeted(args):
+    """Processing function for targeted mode."""
 
     # load data file
     inputdata = Path(args.inputdata)
@@ -30,6 +31,7 @@ def process_targeted(args):
     if args.mztol is None or args.rttol is None:
         raise ValueError("Both --mztol and --rttol must be provided for targeted mode.")
     
+    # Load data and database
     db_data = pd.read_csv(database, sep=";")
     database = Database(dataset=db_data, tracer=args.tracer)
 
@@ -39,7 +41,7 @@ def process_targeted(args):
     experiment.annotate_experiment(mz_tol=args.mztol, rt_tol=args.rttol)
     experiment.clusterize()
 
-    # Set working directory from output path
+    # Set working directory from output path)
     if args.output:
         output = Path(args.output).resolve()
 
@@ -61,86 +63,116 @@ def process_targeted(args):
 # ---------------------
 
 def process_untargeted(args):
+    """Processing function for untargeted mode."""
+
+    # load data file
+    inputdata = Path(args.inputdata)
+    if not inputdata.exists():
+        raise FileNotFoundError(f"File {inputdata} does not exist")
+
     # Check if arguments are provided
     if args.ppm_tol is None or args.rt_window is None:
         raise ValueError("Both --ppm_tol and --rt_window must be provided for untargeted mode.")
     
-    inputdata = Path(args.inputdata)
-    if not inputdata.exists():
-        raise FileNotFoundError(f"File {inputdata} does not exist")
     data = pd.read_csv(inputdata, sep="\t").set_index(["mz", "rt", "id"])
-    experiment = UntargetedExperiment(dataset=data, tracer=args.tracer)
-    experiment.build_final_clusters(RTwindow=args.rt_window, ppm_tolerance=args.ppm_tol, max_atoms=args.max_atoms)
 
-    res_dir = Path(args.inputdata).parent / "res"
+    # Output directory
+    res_dir = inputdata.parent / "res"
     res_dir.mkdir(parents=True, exist_ok=True)
 
+    log_path = (Path(args.output).with_suffix('.log') if args.output else res_dir / f"{inputdata.stem}_untargeted.log")
+    print(f"Log file will be saved to: {log_path}")
+
+    experiment = UntargetedExperiment(dataset=data, tracer=args.tracer, log_file=str(log_path))
+    
+    experiment.build_final_clusters(
+        RTwindow=args.rt_window,
+        ppm_tolerance=args.ppm_tol,
+        max_atoms=args.max_atoms,
+        verbose=args.verbose,
+        keep_best_candidate=args.kbc,
+        keep_richest=args.kr,    
+        )
 
     if args.output:
         # If user provided an output name
         output = res_dir / Path(args.output).name
     else:
         # If no output name provided, generate one
-        base = Path(args.inputdata).stem
+        base = inputdata.stem
         output_name = f"{base}_clusters_RT{args.rt_window}_ppm{args.ppm_tol}.tsv"
         output = res_dir / output_name
 
+    experiment.export_clusters_to_tsv(filepath=output)
+    experiment.export_features(filename=output.with_suffix('.features.tsv'))
+    
     print(f"Results will be saved to: {res_dir}")
 
-    experiment.export_clusters_to_tsv(filepath=output)
-
-
 # -------------------
-# Argument parsing
+# CLI setup
 # -------------------
-def parseArgs():
-    parser = argparse.ArgumentParser(description='Annotation or clustering of isotopic datasets')
+def build_parser_targeted():
+    parser = argparse.ArgumentParser(
+        prog='isogroup_targeted',
+        description='Annotation of isotopic datasets',
+    )
+
     parser.add_argument("inputdata", help="measurements file to process")
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
-    parser.add_argument("-m", "--mode", type=str, choices=['targeted', 'untargeted'], required=True,
-                        help='mode of operation: "targeted" or "untargeted"')
-    parser.add_argument("-o", "--output", type=str,
-                        help='output file for the clusters')
-    
-    # Targeted specific arguments
-    parser.add_argument("-D", type=str,
+    parser.add_argument("-D", type=str, required=True,
                         help="path to database file (csv)")
-    parser.add_argument("--mztol", type=float,
-                        help='mz tolerance in ppm (e.g. "5"), required for targeted')
-    parser.add_argument("--rttol", type=float,
-                        help='rt tolerance (e.g. "10"), required for targeted')
-    
-    # Untargeted specific arguments
-    parser.add_argument("--ppm_tol", type=float,
-                        help='mz tolerance in ppm for clustering (e.g. "5"), required for untargeted')
-    parser.add_argument("--rt_window", type=float,
-                        help='rt tolerance for clustering (e.g. "10"), required for untargeted')
-    parser.add_argument("--max_atoms", type=int,default=None,
-                        help='maximum number of tracer atoms in a molecule (e.g. "20"), optional for untargeted')
-    
+    parser.add_argument("--mztol", type=float, required=True,
+                        help='mz tolerance in ppm (e.g. "5")')
+    parser.add_argument("--rttol", type=float, required=True,
+                        help='rt tolerance (e.g. "10")')
+    parser.add_argument("-o", "--output", type=str, required=True,
+                        help='output file for the clusters')
+    parser.set_defaults(func=process_targeted)
     return parser
 
-# -------------------
+def build_parser_untargeted():
+    parser = argparse.ArgumentParser(
+        prog='isogroup_untargeted',
+        description='Clustering of isotopic datasets',
+    )
+    parser.add_argument("inputdata", help="measurements file to process")
+    parser.add_argument("-t", "--tracer", type=str, required=True,
+                        help='the isotopic tracer (e.g. "13C")')
+    parser.add_argument("--ppm_tol", type=float, required=True,
+                        help='mz tolerance in ppm for clustering (e.g. "5")')
+    parser.add_argument("--rt_window", type=float, required=True,
+                        help='rt tolerance for clustering (e.g. "10")')
+    parser.add_argument("--max_atoms", type=int, default=None,
+                        help='maximum number of tracer atoms in a molecule (e.g. "20"), optional')
+    parser.add_argument("--kbc", type=bool, default=False,
+                        help='keep only the best candidate among overlapping clusters during clustering (default: False)')
+    parser.add_argument("--kr", type=bool, default=True,
+                        help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
+    parser.add_argument("-o", "--output", type=str,
+                        help='output file for the clusters')
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help='enable verbose logging')
+    parser.set_defaults(func=process_untargeted)
+    return parser
+
+# ---------------------
 # CLI entry point
-# -------------------
-def start_cli():
-    parser = parseArgs()
+# ---------------------
+def main_targeted():
+    parser = build_parser_targeted()
     args = parser.parse_args()
+    args.func(args)
 
-    # Define the mode of operation
-    if args.mode == 'targeted':
-        # Check required args for targeted
-        if not all(hasattr(args, attr) for attr in ['D', 'mztol', 'rttol']):
-            parser.error("For targeted mode, --D, --mztol and --rttol are required.")
-        process_targeted(args)
-    elif args.mode == 'untargeted':
-        # Check required args for untargeted
-        if not all(hasattr(args, attr) for attr in ['ppm_tol', 'rt_window']):
-            parser.error("For untargeted mode, --ppm_tol and --rt_window are required.")
-        process_untargeted(args)
-    else:
-        parser.error("Mode must be either 'targeted' or 'untargeted'.")
+def main_untargeted():
+    parser = build_parser_untargeted()
+    args = parser.parse_args()
+    args.func(args)
 
-if __name__ == "__main__":
-    start_cli()
+
+# if __name__ == "__main__":
+# #     # Example: run untargeted main
+#     import sys
+#     main_untargeted()
+
+# Add options (keep richest, keep best candidate)
