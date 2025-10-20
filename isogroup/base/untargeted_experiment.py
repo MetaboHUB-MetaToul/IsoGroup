@@ -5,7 +5,9 @@ from collections import defaultdict
 from isogroup.base.feature import Feature
 from isogroup.base.cluster import Cluster
 from isogroup.base.misc import Misc
-
+import logging
+import time
+from datetime import datetime
 
 class UntargetedExperiment:
     """
@@ -17,11 +19,12 @@ class UntargetedExperiment:
         tracer (str|None): Tracer code used in the experiment (e.g. "13C").
     """
 
-    def __init__(self, dataset: pd.DataFrame|None = None, tracer: str|None = None):
+    def __init__(self, dataset: pd.DataFrame|None = None, tracer: str|None = None, log_file: str = "untargeted_experiment_log.txt"):
         """
         Initialize the untargeted experiment with raw data and tracer information.
         """
         self.dataset = dataset
+        self.log_file = log_file
 
         self._tracer = tracer
         self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer) if tracer is not None else (None, None)
@@ -31,6 +34,13 @@ class UntargetedExperiment:
 
         self.features: dict = {}  # {sample_name: {feature_id: Feature object}}
         self.clusters: dict = {}  # {sample_name: [Cluster objects]}
+        self.unclustered_features: dict = {}  # {sample_name: [Feature objects]}
+
+        # --- Set up logging ---
+        self.log_file = log_file
+        logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.logger = logging.getLogger("IsoGroup.UntargetedExperiment")
+        self.logger.info(f"Tracer: {self.tracer}, Tracer element: {self.tracer_element}, m/z shift: {self.mzshift_tracer}")
 
     @property
     def RTwindow(self) -> float|None:
@@ -64,22 +74,76 @@ class UntargetedExperiment:
         """
         return self._tracer_element
     
-    def build_final_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int | None = None, keep_best_candidate: bool = False):
+
+    def build_final_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int | None = None, keep_best_candidate: bool = False, keep_richest: bool = True, verbose: bool = False):
         """
-        Build and deduplicate clusters of features based on retention time and m/z tolerances.
-        This is a convenience method that combines the initialization of features,
-        building of clusters, and deduplication into a single step.
-        :param RTwindow: float
-        :param ppm_tolerance: float
-        :param max_atoms: int|None
-        :param keep_best_candidate: bool
-        :return: None
+        Complete pipeline to build and deduplicate clusters from the dataset with logging and timing.
+        Parameters:
+            RTwindow (float): Retention time window for clustering.
+            ppm_tolerance (float): m/z tolerance in parts per million for clustering.
+            max_atoms (int|None): Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
+            keep_best_candidate (bool): If True, retain only the feature with the highest intensity for each isotopologue within a cluster.
+            keep_richest (bool): If True, retain only the largest cluster when multiple clusters share features.
         """
+        start_time = time.time()
+        start_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.logger.info(f"Starting untargeted clustering pipeline")
+
+
+        # --- Initialization of features ---
+        print(" Initializing features...", end=" ", flush=True)
+        t0 = time.time()
         self.initialize_experimental_features()
-        self.build_clusters(RTwindow=RTwindow, ppm_tolerance=ppm_tolerance, max_atoms=None)
-        self.deduplicate_clusters(keep_best_candidate=keep_best_candidate, keep_richest=True)
+        features_count = len(next(iter(self.features.values())))
+        n_samples = len(self.features)
+        print(f" done ({features_count} features per sample)")
+        self.logger.info(f"Initialized {features_count} features for {n_samples} samples")
 
 
+        # --- Construction of clusters ---
+        print(" Building clusters without filtration...", end=" ", flush=True)
+        t0 = time.time()
+        self.build_clusters(RTwindow, ppm_tolerance, max_atoms)
+        clusters_count = len(next(iter(self.clusters.values())))  
+        print(f" done ({clusters_count} clusters per sample)")
+
+        # --- Deduplication and cleaning of clusters ---
+        print(" Cleaning clusters...", end=" ", flush=True)
+        t0 = time.time()
+        merged, subset_removed, final, unclustered = self.deduplicate_clusters(keep_best_candidate=keep_best_candidate, keep_richest=keep_richest)
+        print(f"→ {merged} merged, {subset_removed} subsets removed, {final} final clusters remained/sample")
+        self.logger.info(
+            f"Deduplication completed: merged clusters={merged}, removed subsets={subset_removed}, final cleaned clusters={final}, unclustered features={unclustered}"
+        )
+
+        total_time = time.time() - start_time
+        print(f"[IsoGroup] Untargeted clustering completed in {total_time:.2f} seconds.")
+        self.logger.info(f"Pipeline completed in {total_time:.2f} seconds.")
+
+        # --- Verbose logging to file ---
+        if verbose:
+            summary = [
+                ("Start Time", start_dt),
+                ("Tracer", self.tracer),
+                ("Number of samples", n_samples),
+                ("Features/sample", features_count),
+                ("RT window (s)", RTwindow),
+                ("m/z tolerance (ppm)", ppm_tolerance),
+                ("Clusters before cleaning", clusters_count),
+                ("Clusters merged", merged),
+                ("Subset clusters removed", subset_removed),
+                ("Final isotopic clusters/sample", final),
+                ("Unclustered features", unclustered),
+                ("Total time (s)", f"{total_time:.2f}")
+            ]
+            with open(self.log_file, "a") as f:
+                f.write("\n" + "=" * 80 + "\nUntargeted Isotopic Clustering Summary\n" + "=" * 80 + "\n")
+                for key, value in summary:
+                    f.write(f"{key}: {value}\n")
+
+                # TO DO: Add Dataset name in summary
+                # TO DO: Erase previous log file content if any
+ 
     def initialize_experimental_features(self):
         """
         Initialize Feature objects from the dataset and organize them by sample.
@@ -89,11 +153,7 @@ class UntargetedExperiment:
         """
         if self.dataset is None:
             raise ValueError("Dataset is not provided.")
-        
-        # required_columns = {"mz", "rt", "id"}
-        # if not required_columns.issubset(self.dataset.columns):
-        #     raise ValueError(f"Dataset must contain the following columns: {required_columns}")
-        
+                
         for idx, _ in self.dataset.iterrows():
             mz = idx[0]
             rt = idx[1]
@@ -130,7 +190,7 @@ class UntargetedExperiment:
         self._ppm_tolerance = ppm_tolerance
 
         if not self.features:
-            raise ValueError("Features are not initialized. Please run 'initialize_experimental_features()' first.")
+            raise ValueError("Features not initialized.")
 
         self.clusters = {}
 
@@ -169,7 +229,7 @@ class UntargetedExperiment:
 
                 # --- If a group of isotopologues is found, create a cluster ---
                 if len(group) > 1:
-                    cluster_id = f"C{cluster_id}"
+                    cluster_id = f"C{cluster_id_local}"
                     group_sorted = sorted(list(group), key=lambda f: f.mz)
 
                     for f in group_sorted:
@@ -180,6 +240,7 @@ class UntargetedExperiment:
                             f.in_cluster.append(cluster_id)
 
                     clusters[cluster_id] = Cluster(cluster_id=cluster_id, features=group_sorted)
+                    cluster_id_local += 1
 
             self.clusters[sample_name] = clusters
 
@@ -196,11 +257,14 @@ class UntargetedExperiment:
             keep_best_candidate (bool): If True, retain only the feature with the highest intensity for each isotopologue within a cluster.
             keep_richest (bool): If True, retain only the largest cluster when multiple clusters share features.
         """
-        final_clusters = defaultdict(list)  # {sample_name: [Cluster objects]}
+        merged = 0
+        subset_removed = 0
+        final_clusters = {}
 
         for sample, clusters in self.clusters.items():
 
             # --- Merge identical clusters ---
+            final_clusters[sample] = {}
             seen_signatures = {}
             next_cluster_id = 0
 
@@ -211,6 +275,8 @@ class UntargetedExperiment:
                     seen_signatures[signature] = cluster.cluster_id
                     final_clusters[sample][cluster.cluster_id] = cluster
                     next_cluster_id += 1
+                else:
+                    merged += 1
 
             # --- Remove subset clusters if keep_richest is True ---
             if keep_richest:
@@ -223,6 +289,7 @@ class UntargetedExperiment:
                         to_remove.add(cid)
                     else:
                         kept.append((cid, sig1))
+                subset_removed += len(to_remove)
 
                 final_clusters[sample] = {cid: c for cid, c in final_clusters[sample].items() if cid not in to_remove}
 
@@ -239,23 +306,29 @@ class UntargetedExperiment:
             # --- Assign cluster_id, isotopologues label, in_cluster and also_in to features ---
             features_to_clusters = defaultdict(set)
             for cluster in final_clusters[sample].values():
-                for cluster in cluster.values():
-                    for f in cluster.features:
-                        features_to_clusters[f.feature_id].add(cluster.cluster_id)
+                for f in cluster.features:
+                    features_to_clusters[f.feature_id].add(cluster.cluster_id)
 
             for cluster in final_clusters[sample].values():
-                for cluster in cluster.values():
-                    cluster.features.sort(key=lambda f: f.mz)
-                    min_mz=cluster.lowest_mz
-                    for f in cluster.features:
-                        iso_index = round((f.mz - min_mz) / self.mzshift_tracer)
-                        iso_label = "Mx" if iso_index == 0 else f"M+{iso_index}"
-                        f.cluster_isotopologue[cluster.cluster_id] = iso_label
-                        f.in_cluster = list(features_to_clusters[f.feature_id])
-                        f.also_in = [c for c in f.in_cluster if c != cluster.cluster_id]
+                cluster.features.sort(key=lambda f: f.mz)
+                min_mz=cluster.lowest_mz
+                for f in cluster.features:
+                    iso_index = round((f.mz - min_mz) / self.mzshift_tracer)
+                    iso_label = "Mx" if iso_index == 0 else f"M+{iso_index}"
+                    f.cluster_isotopologue[cluster.cluster_id] = iso_label
+                    f.in_cluster = list(features_to_clusters[f.feature_id])
+                    f.also_in = [c for c in f.in_cluster if c != cluster.cluster_id]
+        
+        self.clusters = final_clusters
 
-            self.clusters = final_clusters
+        # Keep unclustered features for reference
+        self.unclustered_features = {}
+        for sample, features in self.features.items():
+            self.unclustered_features[sample] = [f for f in features.values() if not f.in_cluster]
 
+        final = len(next(iter(self.clusters.values()))) if self.clusters else 0
+        unclustered = sum(1 for f in next(iter(self.features.values())).values() if not f.in_cluster) if self.features else 0
+        return merged, subset_removed, final, unclustered
 
     def clusters_to_dataframe(self) -> pd.DataFrame:
         """
@@ -291,5 +364,31 @@ class UntargetedExperiment:
         """
         df = self.clusters_to_dataframe()
         df.to_csv(filepath, sep="\t", index=False)
+
+
+    def export_features(self, filename: str):
+        """
+        Export all features to a TSV file.
+        :param filename: str
+        """
+        records = []
+        for sample_name, features in self.features.items():
+            for f in features.values():
+                # If not in any cluster, mark accordingly
+                cluster_ids = f.in_cluster if f.in_cluster else ["None"]
+                iso_labels = [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
+
+                records.append({
+                    "FeatureID": f.feature_id,
+                    "RT": f.rt,
+                    "m/z": f.mz,
+                    "sample": f.sample,
+                    "Intensity": f.intensity,
+                    "InClusters": cluster_ids,
+                    "Isotopologues": iso_labels
+                })
+
+        df = pd.DataFrame.from_records(records)
+        df.to_csv(filename, sep="\t", index=False)
                     
 
