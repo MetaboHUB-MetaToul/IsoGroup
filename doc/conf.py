@@ -242,7 +242,7 @@ latex_use_modindex = True
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'isogroup', u'IsoGroup Documentation',
-     [u'Butin Noémie, Le Grégam Loïc, Millard Pierre'], 1)
+     [u'Butin Noémie, Le Grégam Loïc, Millard Pierre', 'Kouakou Rochelle'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -256,7 +256,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'IsoGroup', u'IsoGroup Documentation',
-     u'Butin Noémie, Le Grégam Loïc, Millard Pierre', 'IsoGroup',
+     u'Butin Noémie, Le Grégam Loïc, Millard Pierre, Kouakou Rochelle', 'IsoGroup',
      'Isotopic Grouping for mass spectrometry labeling experiments.',
      'Miscellaneous'),
 ]
