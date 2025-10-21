@@ -67,11 +67,6 @@ and make sure you pass all the tests before a pull request.
 In development mode, do a `pip install -e /path/to/IsoGroup` to install
 locally the development version.
 
-<!-- ### Unit tests
-Isotope correction is a complex task and we use unit tests to make sure
-that critical features are not compromised during development.
-
-You can run all tests by calling `pytest` in the shell at project's root directory. -->
 
 ### Build the documentation locally
 Build the HTML documentation with:
@@ -84,11 +79,9 @@ $ make html
 The PDF documentation can be built locally by replacing `html` by `latexpdf`
 in the command above. You will need a recent latex installation.
 
-<!-- ## How to cite
-Millard P., Delépine B., Guionnet M., Heuillet M., Bellvert F. and Letisse F. IsoCor: isotope correction for high-resolution MS labeling experiments. Bioinformatics, 2019, [doi: 10.1093/bioinformatics/btz209](https://doi.org/10.1093/bioinformatics/btz209) -->
 
 ## Authors
-Butin Noémie, Loïc Le Grégam, Pierre Millard
+Butin Noémie, Loïc Le Grégam, Pierre Millard, Rochelle Kouakou
 
 ## Contact
-:email: Pierre Millard, millard@insa-toulouse.fr, Noémie Butin, butin@insa-toulouse.fr
+:email: Pierre Millard, millard@insa-toulouse.fr, Noémie Butin, butin@insa-toulouse.fr, kouakou@insa-toulouse.fr

@@ -1,1 +1,2 @@
-isogroup C:\Users\butin\Desktop\MTH3\Isogroup\data\dataset_test_2.txt -D C:\Users\butin\Desktop\MTH3\Isogroup\data\database_test_2.csv -t 13C --mztol 5 --rttol 10 -o C:\Users\butin\Desktop\MTH3\Isogroup\data\res\test.tsv
+isogroup_targeted C:\Users\butin\Desktop\MTH3\Isogroup\data\dataset_test_XCMS.txt -D C:\Users\butin\Desktop\MTH3\Isogroup\data\database.csv -t 13C --mztol 5 --rttol 10 -o C:\Users\butin\Desktop\MTH3\Isogroup\data\res\test.tsv
+isogroup_untargeted C:\Users\butin\Desktop\MTH3\Isogroup\data\dataset_test_XCMS.txt -t 13C --ppm_tol 5 --rt_window 10 -v
