@@ -1,0 +1,21 @@
+2025-10-21 17:04:46,916 - INFO - Tracer: 13C, Tracer element: C, m/z shift: 1.003354835
+2025-10-21 17:04:46,916 - INFO - Starting untargeted clustering pipeline
+2025-10-21 17:04:47,014 - INFO - Initialized 507 features for 2 samples
+2025-10-21 17:04:47,170 - INFO - Deduplication completed: merged clusters=660, removed subsets=10, final cleaned clusters=89, unclustered features=82
+2025-10-21 17:04:47,170 - INFO - Pipeline completed in 0.25 seconds.
+
+================================================================================
+Untargeted Isotopic Clustering Summary
+================================================================================
+Start Time: 2025-10-21 17:04:46
+Tracer: 13C
+Number of samples: 2
+Features/sample: 507
+RT window (s): 10.0
+m/z tolerance (ppm): 5.0
+Clusters before cleaning: 424
+Clusters merged: 660
+Subset clusters removed: 10
+Final isotopic clusters/sample: 89
+Unclustered features: 82
+Total time (s): 0.25

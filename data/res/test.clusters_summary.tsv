@@ -1,4 +1,0 @@
-cluster_id	name	number_of_features	isotopologues	status	missing_isotopologues	duplicated_isotopologues	samples
-C0	Citrate	6	[0, 1, 2, 3, 4, 5]	Incomplete	[6]		4
-C1	Isocitrate	6	[0, 1, 2, 3, 4, 5]	Incomplete	[6]		4
-C2	Fumarate	5	[0, 1, 2, 3, 4]	Ok			4
