@@ -88,8 +88,10 @@ class Misc:
         if element_mass is None:
             raise ValueError(f"Unknown tracer element: {tracer_element}")
         if tracer_element == "C":
-            factor = 0.6 # Approximation, take into account hydrogen and heteroatoms based on the Seven Golden Rules
+            factor = 0.7 # Approximation, empiric fraction based on the Seven Golden Rules
         elif tracer_element == "N":
+            factor = 0.2
+        elif tracer_element == "O":
             factor = 0.3
         else:
             raise NotImplementedError(f"Tracer {tracer_element} not implemented yet.")
