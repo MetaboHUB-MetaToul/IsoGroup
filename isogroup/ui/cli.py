@@ -170,9 +170,4 @@ def main_untargeted():
     args.func(args)
 
 
-# if __name__ == "__main__":
-# #     # Example: run untargeted main
-#     import sys
-#     main_untargeted()
-
-# Add options (keep richest, keep best candidate)
+# TO DO: Homogeneize the output files
