@@ -1,52 +1,53 @@
 import argparse
 from isogroup.base.database import Database
-from isogroup.base.experiment import Experiment
+from isogroup.base.targeted_experiment import TargetedExperiment
+from isogroup.base.untargeted_experiment import UntargetedExperiment
 from pathlib import Path
 import pandas as pd
 
 
-def process(args):
+# -------------------
+# Targeted processing
+# -------------------
+
+def process_targeted(args):
+    """Processing function for targeted mode."""
 
     # load data file
     inputdata = Path(args.inputdata)
 
     if not inputdata.exists():
-        msg = f"File {inputdata} does not exist"
-        raise FileNotFoundError(msg)
+        raise FileNotFoundError(f"File {inputdata} does not exist")
 
     # load database file
-    if hasattr(args, 'D'):
-        database = Path(args.D)
-    else:
-        msg = "No database file provided"
-        raise ValueError(msg)
+    if args.D is None:
+        raise ValueError("No database file provided. Use -D <file.csv>")
+    database = Path(args.D)
     if not database.exists():
         msg = f"File {database} does not exist"
         raise FileNotFoundError(msg)
-
-    mztol = float(getattr(args, 'mztol', None))
-    rttol = float(getattr(args, 'rttol', None))
-    tracer = getattr(args, 'tracer', None)
-
+    
+    #Check tolerances
+    if args.mztol is None or args.rttol is None:
+        raise ValueError("Both --mztol and --rttol must be provided for targeted mode.")
+    
+    # Load data and database
     db_data = pd.read_csv(database, sep=";")
+    database = Database(dataset=db_data, tracer=args.tracer)
 
-    database = Database(dataset=db_data, tracer=tracer)
-    data = pd.read_csv(inputdata, sep="\t")
-    data = data.set_index(["mz", "rt", "id"])
+    data = pd.read_csv(inputdata, sep="\t").set_index(["mz", "rt", "id"])
 
-    experiment = Experiment(dataset=data, database=database, tracer=tracer)
-    experiment.annotate_experiment(mz_tol=mztol, rt_tol=rttol)
+    experiment = TargetedExperiment(dataset=data, database=database, tracer=args.tracer)
+    experiment.annotate_experiment(mz_tol=args.mztol, rt_tol=args.rttol)
     experiment.clusterize()
 
-    # Set working directory from output path
+    # Set working directory from output path)
     if args.output:
         output = Path(args.output).resolve()
 
         # Create the output directory 
         res_dir = output.parent / "res"
         res_dir.mkdir(parents=True, exist_ok=True)
-
-        # Set the output path to the res directory
         output = res_dir / output.name
         print(f"Results will be saved to: {res_dir}")
 
@@ -54,30 +55,119 @@ def process(args):
         experiment.export_clusters(filename=output.with_suffix('.annotated_clusters.tsv'))
         experiment.clusters_summary(filename=output.with_suffix('.clusters_summary.tsv'))
     else:
-        msg = "No output file provided"
-        raise ValueError(msg)
+        raise ValueError("No output file provided")
 
-def parseArgs():
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS,
-                                     description='annotation of isotopic datasets')
+
+# ---------------------
+# Untargeted processing
+# ---------------------
+
+def process_untargeted(args):
+    """Processing function for untargeted mode."""
+
+    # load data file
+    inputdata = Path(args.inputdata)
+    if not inputdata.exists():
+        raise FileNotFoundError(f"File {inputdata} does not exist")
+
+    # Check if arguments are provided
+    if args.ppm_tol is None or args.rt_window is None:
+        raise ValueError("Both --ppm_tol and --rt_window must be provided for untargeted mode.")
+    
+    data = pd.read_csv(inputdata, sep="\t").set_index(["mz", "rt", "id"])
+
+    # Output directory
+    res_dir = inputdata.parent / "res"
+    res_dir.mkdir(parents=True, exist_ok=True)
+
+    log_path = (Path(args.output).with_suffix('.log') if args.output else res_dir / f"{inputdata.stem}_untargeted.log")
+    print(f"Log file will be saved to: {log_path}")
+
+    experiment = UntargetedExperiment(dataset=data, tracer=args.tracer, log_file=str(log_path))
+    
+    experiment.build_final_clusters(
+        RTwindow=args.rt_window,
+        ppm_tolerance=args.ppm_tol,
+        max_atoms=args.max_atoms,
+        verbose=args.verbose,
+        keep_best_candidate=args.kbc,
+        keep_richest=args.kr,    
+        )
+
+    if args.output:
+        # If user provided an output name
+        output = res_dir / Path(args.output).name
+    else:
+        # If no output name provided, generate one
+        base = inputdata.stem
+        output_name = f"{base}_clusters_RT{args.rt_window}_ppm{args.ppm_tol}.tsv"
+        output = res_dir / output_name
+
+    experiment.export_clusters_to_tsv(filepath=output)
+    experiment.export_features(filename=output.with_suffix('.features.tsv'))
+    
+    print(f"Results will be saved to: {res_dir}")
+
+# -------------------
+# CLI setup
+# -------------------
+def build_parser_targeted():
+    parser = argparse.ArgumentParser(
+        prog='isogroup_targeted',
+        description='Annotation of isotopic datasets',
+    )
 
     parser.add_argument("inputdata", help="measurements file to process")
-    parser.add_argument("-D", type=str, help="path to database file (csv)") 
-
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
+    parser.add_argument("-D", type=str, required=True,
+                        help="path to database file (csv)")
     parser.add_argument("--mztol", type=float, required=True,
                         help='mz tolerance in ppm (e.g. "5")')
     parser.add_argument("--rttol", type=float, required=True,
                         help='rt tolerance (e.g. "10")')
-    parser.add_argument("-o", "--output", type=str,
+    parser.add_argument("-o", "--output", type=str, required=True,
                         help='output file for the clusters')
-    # parser.add_argument("-v", "--verbose",
-    #                     help="flag to enable verbose logs", action='store_true')
+    parser.set_defaults(func=process_targeted)
     return parser
 
+def build_parser_untargeted():
+    parser = argparse.ArgumentParser(
+        prog='isogroup_untargeted',
+        description='Clustering of isotopic datasets',
+    )
+    parser.add_argument("inputdata", help="measurements file to process")
+    parser.add_argument("-t", "--tracer", type=str, required=True,
+                        help='the isotopic tracer (e.g. "13C")')
+    parser.add_argument("--ppm_tol", type=float, required=True,
+                        help='mz tolerance in ppm for clustering (e.g. "5")')
+    parser.add_argument("--rt_window", type=float, required=True,
+                        help='rt tolerance for clustering (e.g. "10")')
+    parser.add_argument("--max_atoms", type=int, default=None,
+                        help='maximum number of tracer atoms in a molecule (e.g. "20"), optional')
+    parser.add_argument("--kbc", type=bool, default=False,
+                        help='keep only the best candidate among overlapping clusters during clustering (default: False)')
+    parser.add_argument("--kr", type=bool, default=True,
+                        help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
+    parser.add_argument("-o", "--output", type=str,
+                        help='output file for the clusters')
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help='enable verbose logging')
+    parser.set_defaults(func=process_untargeted)
+    return parser
 
-def start_cli():
-    parser = parseArgs()
+# ---------------------
+# CLI entry point
+# ---------------------
+def main_targeted():
+    parser = build_parser_targeted()
     args = parser.parse_args()
-    process(args)
+    args.func(args)
+
+def main_untargeted():
+    parser = build_parser_untargeted()
+    args = parser.parse_args()
+    args.func(args)
+
+
+# TO DO: Homogeneize the output files

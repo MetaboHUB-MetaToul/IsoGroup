@@ -100,6 +100,9 @@ pygments_style = 'sphinx'
 # sphinx.ext.todo options
 todo_include_todos = True
 
+
+nbsphinx_execute = 'never'
+
 # -- Options for HTML output ---------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -133,7 +136,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -208,8 +211,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual], toctree_only).
 latex_documents = [
-    ('index', 'isocor.tex', u'IsoCor Documentation',
-     "Baudoin Del\\'epine, Matthieu Guionnet, Pierre Millard", 'manual', False),
+    ('index', 'isogroup.tex', u'IsoGroup Documentation',
+     "Butin Noémie, Le Grégam Loïc, Millard Pierre", 'manual', False),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -238,8 +241,8 @@ latex_use_modindex = True
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'isocor', u'IsoCor Documentation',
-     [u'Baudoin Delépine, Matthieu Guionnet, Pierre Millard'], 1)
+    ('index', 'isogroup', u'IsoGroup Documentation',
+     [u'Butin Noémie, Le Grégam Loïc, Millard Pierre', 'Kouakou Rochelle'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -252,9 +255,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'IsoCor', u'IsoCor Documentation',
-     u'Baudoin Delépine, Matthieu Guionnet, Pierre Millard', 'IsoCor',
-     'Isotope Correction for mass spectrometry labeling experiments.',
+    ('index', 'IsoGroup', u'IsoGroup Documentation',
+     u'Butin Noémie, Le Grégam Loïc, Millard Pierre, Kouakou Rochelle', 'IsoGroup',
+     'Isotopic Grouping for mass spectrometry labeling experiments.',
      'Miscellaneous'),
 ]
 

@@ -1,0 +1,7 @@
+cluster_id	name	number_of_features	isotopologues	status	missing_isotopologues	duplicated_isotopologues	samples
+C0	G6P	7	[0, 1, 2, 3, 4, 5, 6]	Ok			2
+C1	a-KG	6	[0, 1, 2, 3, 4, 5]	Ok			2
+C2	ADP	11	[0, 1, 2, 2, 3, 4, 5, 6, 7, 8, 9]	Incomplete, duplicated isotopologues	[10]	[2]	2
+C3	Fumarate	5	[0, 1, 2, 3, 4]	Ok			2
+C4	Malate	5	[0, 1, 2, 3, 4]	Ok			2
+C5	Succinate	5	[0, 1, 2, 3, 4]	Ok			2

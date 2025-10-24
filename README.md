@@ -6,10 +6,16 @@
 
 
 ## What is IsoGroup?
-**IsoCor is a scientific software dedicated to the processing of isotopic data from untargeted mass spectrometry (MS) labeling experiments**.
-IsoGroup groups mass features (m/z, retention time, intensity) identified as :ref:`isotopologues <isotopologues>` into :ref:`isotopic clusters <isotopic clusters>` based on the tracer element used in the experiment.
-It also generates a database of isotopologues specific to the selected tracer, which is used to annotate the clusters.
-The output of IsoGroup is a list of isotopic clusters (m/z, retention time, intensity, isotopologues). 
+**IsoGroup is a scientific software dedicated to the processing of isotopic data from untargeted mass spectrometry (MS) labeling experiments**.
+It is suitable for diverse applications including annotation, isotopic profiling, quantification, and fluxomics experiments.
+IsoGroup supports two complementary modes of data processing: 
+* In **targeted** mode, IsoGroup performs **annotation** of isotopic clusters based on a user-provided database of compounds.
+  Mass features (m/z, retention time, intensity) are matched to known metabolites and isotopologues according to their exact mass and retention time.
+  A database of isotopologues specific to the selected tracer is generated and used for the annotation.
+* In **untargeted** mode, IsoGroup performs **clustering** by grouping MS features identified as :ref:`isotopologues <isotopologues>` into :ref:`isotopic clusters <isotopic clusters>` **without prior knowledge**, based solely on the characteristic mass differences induced by the tracer element.
+
+
+The output of IsoGroup is a list of isotopic clusters with their m/z, retention time, intensity, and isotopologues. 
 
 The code is open-source, and available under a GPLv3 license.
 
@@ -61,11 +67,6 @@ and make sure you pass all the tests before a pull request.
 In development mode, do a `pip install -e /path/to/IsoGroup` to install
 locally the development version.
 
-<!-- ### Unit tests
-Isotope correction is a complex task and we use unit tests to make sure
-that critical features are not compromised during development.
-
-You can run all tests by calling `pytest` in the shell at project's root directory. -->
 
 ### Build the documentation locally
 Build the HTML documentation with:
@@ -78,11 +79,9 @@ $ make html
 The PDF documentation can be built locally by replacing `html` by `latexpdf`
 in the command above. You will need a recent latex installation.
 
-<!-- ## How to cite
-Millard P., Delépine B., Guionnet M., Heuillet M., Bellvert F. and Letisse F. IsoCor: isotope correction for high-resolution MS labeling experiments. Bioinformatics, 2019, [doi: 10.1093/bioinformatics/btz209](https://doi.org/10.1093/bioinformatics/btz209) -->
 
 ## Authors
-Butin Noémie, Loïc Le Grégam, Pierre Millard
+Butin Noémie, Loïc Le Grégam, Pierre Millard, Rochelle Kouakou
 
 ## Contact
-:email: Pierre Millard, millard@insa-toulouse.fr, Noémie Butin, butin@insa-toulouse.fr
+:email: Pierre Millard, millard@insa-toulouse.fr, Noémie Butin, butin@insa-toulouse.fr, kouakou@insa-toulouse.fr

@@ -6,8 +6,21 @@ import pandas as pd
 
 
 class Database:
+    """
+    Represents a database of theoretical features for a specific tracer.
+
+    Args:
+        dataset (pd.DataFrame): DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
+        tracer (str): Tracer code (e.g. "13C") used to initialize the database.
+    """
 
     def __init__(self, dataset: pd.DataFrame, tracer: str):
+        """
+        Initialize the database with a dataset and tracer.
+        :param dataset: DataFrame containing metabolite data with columns for RT, metabolite names, formulas, and charge.
+        :type dataset: pd.DataFrame
+        :param tracer: Tracer code (e.g. "13C") used to initialize the database.
+        """
         self.dataset = dataset
         self.features: list = []
         self.tracer: str = tracer
@@ -26,10 +39,9 @@ class Database:
         return len(self.dataset)
 
     def initialize_theoretical_features(self):
-
         """
-        Creates chemical labelled from isocor functions
-        then initializes the theoretical features from a database file
+        Creates chemical labelled objects from the dataset and initializes theoretical features.
+        For each chemical, it generates features with isotopologues based on the tracer.
         """
         for _, line in self.dataset.iterrows():
             chemical = LabelledChemical(
@@ -60,8 +72,9 @@ class Database:
 
     def export_database(self, filename = None):
         """
-        Create a DataFrame to summarize the database
-        Export the DataFrame to a tsv file if a filename is provided with samples in column
+        Summarize theoretical features into a DataFrame and optionally export it to a tsv file.
+        :param filename: Name of the file to export the summary to
+        :return: pd.DataFrame with the summary of the theoretical features
         """
 
         # Create a DataFrame to summarize the theoretical features
