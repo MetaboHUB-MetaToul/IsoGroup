@@ -214,15 +214,15 @@ class UntargetedExperiment:
                     if candidate == base_feature:
                         continue
 
-                    iso_number = round((candidate.mz - base_feature.mz) / self.mzshift_tracer)
+                    iso_index = round((candidate.mz - base_feature.mz) / self.mzshift_tracer)
 
                     # Define a maximum number of tracer atoms if specified
                     max_iso = Misc.get_max_isotopologues_for_mz(base_feature.mz, self.tracer_element) if max_atoms is None else max_atoms
 
-                    if abs(iso_number) > max_iso:
+                    if abs(iso_index) > max_iso:
                         continue
                         
-                    expected_mz = base_feature.mz + iso_number * self.mzshift_tracer
+                    expected_mz = base_feature.mz + iso_index * self.mzshift_tracer
                     delta_ppm = abs(expected_mz - candidate.mz) / expected_mz * 1e6
                     if delta_ppm <= ppm_tolerance:
                         group.add(candidate)
@@ -233,7 +233,7 @@ class UntargetedExperiment:
                     group_sorted = sorted(list(group), key=lambda f: f.mz)
 
                     for f in group_sorted:
-                        iso_index = round((f.mz - group_sorted[0].mz) / self.mzshift_tracer)
+                        iso_index = round((f.mz - group_sorted[0].mz) / self.mzshift_tracer) # Theoretical isotopologue index
                         iso_label_tmp = "Mx" if iso_index == 0 else f"M+{iso_index}"
                         f.cluster_isotopologue[cluster_id] = iso_label_tmp # Specific to clusters
                         if cluster_id not in f.in_cluster:
@@ -284,6 +284,8 @@ class UntargetedExperiment:
                 sorted_clusters = sorted(signatures.items(), key=lambda x: len(x[1]), reverse=True)
                 to_remove = set()
                 kept = []
+                # Compare from largest to smallest cluster to identify subsets
+                # If a smaller cluster is a subset of any kept larger cluster, mark it for removal
                 for cid, sig1 in sorted_clusters:
                     if any(sig1 < sig2 for _, sig2 in kept):
                         to_remove.add(cid)
@@ -293,17 +295,17 @@ class UntargetedExperiment:
 
                 final_clusters[sample] = {cid: c for cid, c in final_clusters[sample].items() if cid not in to_remove}
 
-            # --- Keep only the best candidate for each isotopologue if keep_best_candidate is True ---
+            # --- Keep only the best candidate for each isotopologue (based on the the closest m/z to expected) if keep_best_candidate is True ---
             if keep_best_candidate:
                 for cluster in final_clusters[sample].values():
                     iso_to_candidate  = defaultdict(list)
                     base_mz = cluster.lowest_mz
                     for f in cluster.features:
-                        iso_number = round((f.mz - base_mz) / self.mzshift_tracer)
-                        iso_to_candidate[iso_number].append(f)
+                        iso_index = round((f.mz - base_mz) / self.mzshift_tracer)
+                        iso_to_candidate[iso_index].append(f)
                         cluster.features = [min(candidates, key=lambda f: abs(f.mz - (base_mz + iso * self.mzshift_tracer))) for iso, candidates in iso_to_candidate.items()]
 
-            # --- Assign cluster_id, isotopologues label, in_cluster and also_in to features ---
+            # --- Assign final cluster_id, isotopologues label, in_cluster and also_in to features ---
             features_to_clusters = defaultdict(set)
             for cluster in final_clusters[sample].values():
                 for f in cluster.features:
@@ -314,7 +316,7 @@ class UntargetedExperiment:
                 min_mz=cluster.lowest_mz
                 for f in cluster.features:
                     iso_index = round((f.mz - min_mz) / self.mzshift_tracer)
-                    iso_label = "Mx" if iso_index == 0 else f"M+{iso_index}"
+                    iso_label = "Mx" if iso_index == 0 else f"Mx+{iso_index}"
                     f.cluster_isotopologue[cluster.cluster_id] = iso_label
                     f.in_cluster = list(features_to_clusters[f.feature_id])
                     f.also_in = [c for c in f.in_cluster if c != cluster.cluster_id]
