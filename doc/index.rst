@@ -40,7 +40,8 @@ This documentation is available on Read the Docs (`https://isogroup.readthedocs.
    :caption: Usage
 
    quickstart.rst
-   tutorials.rst
+   tutorials_targeted.rst
+   tutorials_untargeted.rst
 
 .. toctree::
    :maxdepth: 1
