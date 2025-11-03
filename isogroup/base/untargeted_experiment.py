@@ -15,24 +15,40 @@ class UntargetedExperiment:
     An untargeted experiment contains a collection of features and clusters, along with associated metadata.
 
     Args:
-        dataset (pd.DataFrame|None): DataFrame containing raw mass spectrometry data.
+        dataset (pd.DataFrame|None): DataFrame c.
         tracer (str|None): Tracer code used in the experiment (e.g. "13C").
+        tracer_element (str|None): Element extracted from the tracer code.
+        
+        ppm_tolerance (float): m/z tolerance in ppm for clustering.
+        rt_window (float|None): Retention time window for clustering.
+        max_atoms (int|None): Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
     """
 
-    def __init__(self, dataset: pd.DataFrame|None = None, tracer: str|None = None, log_file: str = "untargeted_experiment_log.txt"):
-        """
-        Initialize the untargeted experiment with raw data and tracer information.
-        """
-        self.dataset = dataset
+    def __init__(self, features : dict, 
+                 tracer: str, 
+                 tracer_element, tracer_idx, 
+                 ppm_tolerance, 
+                 rt_window, 
+                 max_atoms = None, 
+                #  keep_best_candidate: bool = False,
+                #  keep_richest: bool = False,
+                 log_file: str = "untargeted_experiment_log.txt"):
+        
+        # self.dataset = dataset
+        self.features = features
         self.log_file = log_file
 
-        self._tracer = tracer
-        self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer) if tracer is not None else (None, None)
-        self._RTwindow: float|None = None
-        self._ppm_tolerance: float|None = None
-        self.mzshift_tracer = float(Misc.calculate_mzshift(self._tracer)) if tracer is not None else None
+        self.tracer = tracer
+        self._tracer_element, self._tracer_idx = tracer_element, tracer_idx
+        self.RTwindow = rt_window
+        self.ppm_tolerance = ppm_tolerance
+        self.max_atoms = max_atoms
+        self.mzshift_tracer = float(Misc.calculate_mzshift(self.tracer)) if tracer is not None else None
 
-        self.features: dict = {}  # {sample_name: {feature_id: Feature object}}
+        # self.keep_best_candidate = keep_best_candidate
+        # self.keep_richest = keep_richest
+
+        # self.features: dict = {}  # {sample_name: {feature_id: Feature object}}
         self.clusters: dict = {}  # {sample_name: [Cluster objects]}
         self.unclustered_features: dict = {}  # {sample_name: [Feature objects]}
 
@@ -42,29 +58,29 @@ class UntargetedExperiment:
         self.logger = logging.getLogger("IsoGroup.UntargetedExperiment")
         self.logger.info(f"Tracer: {self.tracer}, Tracer element: {self.tracer_element}, m/z shift: {self.mzshift_tracer}")
 
-    @property
-    def RTwindow(self) -> float|None:
-        """
-        Returns the retention time tolerance (RT window) used to group features into clusters.
-        :return: float|None
-        """
-        return self._RTwindow
+    # @property
+    # def RTwindow(self) -> float|None:
+    #     """
+    #     Returns the retention time tolerance (RT window) used to group features into clusters.
+    #     :return: float|None
+    #     """
+    #     return self._RTwindow
     
-    @property
-    def ppm_tolerance(self) -> float|None:
-        """
-        Returns the mass-to-charge ratio (m/z) tolerance in parts per million (ppm) used to group features into clusters.
-        :return: float|None
-        """
-        return self._ppm_tolerance
+    # @property
+    # def ppm_tolerance(self) -> float|None:
+    #     """
+    #     Returns the mass-to-charge ratio (m/z) tolerance in parts per million (ppm) used to group features into clusters.
+    #     :return: float|None
+    #     """
+    #     return self._ppm_tolerance
     
-    @property
-    def tracer(self) -> str|None:
-        """
-        Returns the tracer code used in the experiment.
-        :return: str|None
-        """
-        return self._tracer
+    # @property
+    # def tracer(self) -> str|None:
+    #     """
+    #     Returns the tracer code used in the experiment.
+    #     :return: str|None
+    #     """
+    #     return self._tracer
     
     @property
     def tracer_element(self) -> str|None:
@@ -75,7 +91,7 @@ class UntargetedExperiment:
         return self._tracer_element
     
 
-    def build_final_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int | None = None, keep_best_candidate: bool = False, keep_richest: bool = True, verbose: bool = False):
+    def build_final_clusters(self, keep_best_candidate: bool = False, keep_richest: bool = True, verbose: bool = False):
         """
         Complete pipeline to build and deduplicate clusters from the dataset with logging and timing.
         Parameters:
@@ -93,7 +109,7 @@ class UntargetedExperiment:
         # --- Initialization of features ---
         print(" Initializing features...", end=" ", flush=True)
         t0 = time.time()
-        self.initialize_experimental_features()
+        # self.initialize_experimental_features()
         features_count = len(next(iter(self.features.values())))
         n_samples = len(self.features)
         print(f" done ({features_count} features per sample)")
@@ -103,7 +119,7 @@ class UntargetedExperiment:
         # --- Construction of clusters ---
         print(" Building clusters without filtration...", end=" ", flush=True)
         t0 = time.time()
-        self.build_clusters(RTwindow, ppm_tolerance, max_atoms)
+        self.build_clusters(self.RTwindow, self.ppm_tolerance, self.max_atoms)
         clusters_count = len(next(iter(self.clusters.values())))  
         print(f" done ({clusters_count} clusters per sample)")
 
@@ -127,8 +143,8 @@ class UntargetedExperiment:
                 ("Tracer", self.tracer),
                 ("Number of samples", n_samples),
                 ("Features/sample", features_count),
-                ("RT window (s)", RTwindow),
-                ("m/z tolerance (ppm)", ppm_tolerance),
+                ("RT window (s)", self.RTwindow),
+                ("m/z tolerance (ppm)", self.ppm_tolerance),
                 ("Clusters before cleaning", clusters_count),
                 ("Clusters merged", merged),
                 ("Subset clusters removed", subset_removed),
@@ -141,44 +157,44 @@ class UntargetedExperiment:
                 for key, value in summary:
                     f.write(f"{key}: {value}\n")
 
-                # TO DO: Add Dataset name in summary
-                # TO DO: Erase previous log file content if any
+        # TODO: Add Dataset name in summary
+        # TODO: Erase previous log file content if any
  
-    def initialize_experimental_features(self):
-        """
-        Initialize Feature objects from the dataset and organize them by sample.
-        Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
-        Populates `self.samples` as a dictionary of the form:
-        {sample_name: {feature_id: Feature object}}
-        """
-        if self.dataset is None:
-            raise ValueError("Dataset is not provided.")
+    # def initialize_experimental_features(self):
+    #     """
+    #     Initialize Feature objects from the dataset and organize them by sample.
+    #     Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
+    #     Populates `self.samples` as a dictionary of the form:
+    #     {sample_name: {feature_id: Feature object}}
+    #     """
+    #     if self.dataset is None:
+    #         raise ValueError("Dataset is not provided.")
                 
-        for idx, _ in self.dataset.iterrows():
-            mz = idx[0]
-            rt = idx[1]
-            id = idx[2]
+    #     for idx, _ in self.dataset.iterrows():
+    #         mz = idx[0]
+    #         rt = idx[1]
+    #         id = idx[2]
 
-            # Extract the intensity for each sample in the dataset
-            for sample in self.dataset.columns:
-                if sample not in ["mz", "rt", "id"]:
-                    intensity = self.dataset.loc[idx, sample]
+    #         # Extract the intensity for each sample in the dataset
+    #         for sample in self.dataset.columns:
+    #             if sample not in ["mz", "rt", "id"]:
+    #                 intensity = self.dataset.loc[idx, sample]
 
-                    # Initialize the experimental features for each sample
-                    feature = Feature(
-                        rt=rt, mz=mz, tracer=self.tracer,
-                        feature_id=id, 
-                        intensity=intensity,
-                        sample=sample
-                        )
+    #                 # Initialize the experimental features for each sample
+    #                 feature = Feature(
+    #                     rt=rt, mz=mz, tracer=self.tracer,
+    #                     feature_id=id, 
+    #                     intensity=intensity,
+    #                     sample=sample
+    #                     )
                     
-                    # Add the feature in the list corresponding to the sample
-                    if sample not in self.features:   
-                        self.features[sample] = {}
-                    self.features[sample][id] = feature
+    #                 # Add the feature in the list corresponding to the sample
+    #                 if sample not in self.features:   
+    #                     self.features[sample] = {}
+    #                 self.features[sample][id] = feature
 
 
-    def build_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int | None = None):
+    def build_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int = None):
         """
         Group features into potential isotopologue clusters based on retention time proximity and m/z differences.
         Parameters:
@@ -186,8 +202,8 @@ class UntargetedExperiment:
             ppm_tolerance (float): m/z tolerance in parts per million for clustering.
             max_atoms (int|None): Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
         """
-        self._RTwindow = RTwindow
-        self._ppm_tolerance = ppm_tolerance
+        # self._RTwindow = RTwindow
+        # self._ppm_tolerance = ppm_tolerance
 
         if not self.features:
             raise ValueError("Features not initialized.")
@@ -332,65 +348,64 @@ class UntargetedExperiment:
         unclustered = sum(1 for f in next(iter(self.features.values())).values() if not f.in_cluster) if self.features else 0
         return merged, subset_removed, final, unclustered
 
-    def clusters_to_dataframe(self) -> pd.DataFrame:
-        """
-        Convert the clusters into a pandas DataFrame for easier analysis and export.
-        :return: pd.DataFrame
-        """
-        records = []
-        for sample_name, clusters in self.clusters.items():
-            for cluster in clusters.values():
-                sorted_features = sorted(cluster.features, key=lambda f: f.mz)
+    # def clusters_to_dataframe(self) -> pd.DataFrame:
+    #     """
+    #     Convert the clusters into a pandas DataFrame for easier analysis and export.
+    #     :return: pd.DataFrame
+    #     """
+    #     records = []
+    #     for sample_name, clusters in self.clusters.items():
+    #         for cluster in clusters.values():
+    #             sorted_features = sorted(cluster.features, key=lambda f: f.mz)
 
-                for idx, f in enumerate(sorted_features):
-                    iso_label = f.cluster_isotopologue.get(cluster.cluster_id, "Mx")
-                    records.append({
-                        "ClusterID": cluster.cluster_id,
-                        "FeatureID": f.feature_id,
-                        "RT": f.rt,
-                        "m/z": f.mz,
-                        "sample": f.sample,
-                        "Intensity": f.intensity,
-                        "Isotopologue": iso_label,
-                        "InClusters": f.in_cluster,
-                        "AlsoIn": f.also_in
-                    })
+    #             for idx, f in enumerate(sorted_features):
+    #                 iso_label = f.cluster_isotopologue.get(cluster.cluster_id, "Mx")
+    #                 records.append({
+    #                     "ClusterID": cluster.cluster_id,
+    #                     "FeatureID": f.feature_id,
+    #                     "RT": f.rt,
+    #                     "m/z": f.mz,
+    #                     "sample": f.sample,
+    #                     "Intensity": f.intensity,
+    #                     "Isotopologue": iso_label,
+    #                     "InClusters": f.in_cluster,
+    #                     "AlsoIn": f.also_in
+    #                 })
 
-        return pd.DataFrame.from_records(records)
-
-
-    def export_clusters_to_tsv(self, filepath: str):
-        """
-        Export the clusters to a CSV file.
-        :param filepath: str
-        """
-        df = self.clusters_to_dataframe()
-        df.to_csv(filepath, sep="\t", index=False)
+    #     return pd.DataFrame.from_records(records)
 
 
-    def export_features(self, filename: str):
-        """
-        Export all features to a TSV file.
-        :param filename: str
-        """
-        records = []
-        for sample_name, features in self.features.items():
-            for f in features.values():
-                # If not in any cluster, mark accordingly
-                cluster_ids = f.in_cluster if f.in_cluster else ["None"]
-                iso_labels = [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
+    # def export_clusters_to_tsv(self, filepath: str):
+    #     """
+    #     Export the clusters to a CSV file.
+    #     :param filepath: str
+    #     """
+    #     df = self.clusters_to_dataframe()
+    #     df.to_csv(filepath, sep="\t", index=False)
 
-                records.append({
-                    "FeatureID": f.feature_id,
-                    "RT": f.rt,
-                    "m/z": f.mz,
-                    "sample": f.sample,
-                    "Intensity": f.intensity,
-                    "InClusters": cluster_ids,
-                    "Isotopologues": iso_labels
-                })
 
-        df = pd.DataFrame.from_records(records)
-        df.to_csv(filename, sep="\t", index=False)
+    # def export_features(self, filename: str):
+    #     """
+    #     Export all features to a TSV file.
+    #     :param filename: str
+    #     """
+    #     records = []
+    #     for sample_name, features in self.features.items():
+    #         for f in features.values():
+    #             # If not in any cluster, mark accordingly
+    #             cluster_ids = f.in_cluster if f.in_cluster else ["None"]
+    #             iso_labels = [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
+
+    #             records.append({
+    #                 "FeatureID": f.feature_id,
+    #                 "RT": f.rt,
+    #                 "m/z": f.mz,
+    #                 "sample": f.sample,
+    #                 "Intensity": f.intensity,
+    #                 "InClusters": cluster_ids,
+    #                 "Isotopologues": iso_labels
+    #             })
+
+    #     df = pd.DataFrame.from_records(records)
+    #     df.to_csv(filename, sep="\t", index=False)
                     
-
