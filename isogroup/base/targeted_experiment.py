@@ -1,29 +1,26 @@
 from __future__ import annotations
-# import pandas as pd
-from isogroup.base.database import Database
-# from isogroup.base.feature import Feature
+import pandas as pd
+from isogroup.base.experiment import Experiment
 from isogroup.base.cluster import Cluster
-# from isogroup.base.misc import Misc
 
-
-class TargetedExperiment:
+class TargetedExperiment(Experiment):
     """
     Represents a targeted mass spectrometry experiment.
     Used to group and annotate detected features from an experimental dataset using a reference database with isotopic tracer information.
-
-    Args:
-        features (dict): Dictionary containing all the features detected for each sample based on experimental data.
-        database (Database): Database object used for annotation of features.
-        mz_tol (float): m/z tolerance in ppm.
-        rt_tol (float): Retention time tolerance in seconds.
     """
 
-    def __init__(self, features : dict, database : Database,  mz_tol, rt_tol):
-        """Initialize the experiment with dataset, annotated database, and tracer information."""
-        self.features = features
-        self.database = database
-        self.mz_tol = mz_tol
-        self.rt_tol = rt_tol
+    def __init__(self, tracer:str, mz_tol:float, rt_tol:float, database:pd.dataframe):
+        """
+        :param tracer: Tracer code used in the experiment (e.g. "13C").
+        database (Database): Database object used for annotation of features.
+        mz_tol (float): m/z tolerance in ppm.
+        rt_tol (float): Retention time tolerance in seconds."""
+        super().__init__(tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, database=database)
+        # self.features = features
+        # self.features = features
+        # self.database = database
+        # self.mz_tol = mz_tol
+        # self.rt_tol = rt_tol
 
         # self.tracer = tracer
         # self.cluster = cluster
@@ -73,7 +70,7 @@ class TargetedExperiment:
         for sample in self.features.values():
             for feature in sample.values():
                     
-                for db_feature in self.database.features:
+                for db_feature in self.database.theoretical_features:
 
                     # Calculate the exact mz and rt errors
                     mz_error = (db_feature.mz - feature.mz)
