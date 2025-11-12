@@ -1,5 +1,5 @@
 import argparse
-from isogroup.base.database import Database
+# from isogroup.base.database import Database
 from isogroup.base.targeted_experiment import TargetedExperiment
 from isogroup.base.untargeted_experiment import UntargetedExperiment
 from isogroup.base.io import IoHandler
@@ -59,25 +59,26 @@ import pandas as pd
 #         raise ValueError("No output file provided")
 
 def process_targeted(args):
-
     # load data file
-    io = IoHandler(dataset=args.inputdata, tracer=args.tracer, database=args.D, mz_tol=args.mztol, rt_tol=args.rttol, outputs_path=args.output)
-    io.read_dataset()
-    io.initialize_experimental_features()
-    io.read_database()
-
-    io.create_output_directory()
+    io = IoHandler()
+    dataset = io.read_dataset(args.inputdata)
+    io.create_output_directory(args.output)
+    database = io.read_database(args.D)
 
     targeted_experiment= TargetedExperiment(
-        features=io.features,
-        database=io.database,
-        mz_tol=io.mz_tol,
-        rt_tol=io.rt_tol)
+        tracer=args.tracer,
+        mz_tol=args.mztol,
+        rt_tol=args.rttol,
+        database=database)
+    io.export_theoretical_database(targeted_experiment.database)
+
+    targeted_experiment.initialize_experimental_features(dataset)
     targeted_experiment.annotate_features()
     targeted_experiment.clusterize()
+
     
-    io.export_annotated_features()
-    io.export_clusters(targeted_experiment.clusters)
+    io.targ_export_features(targeted_experiment.features)
+    io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
     io.clusters_summary(targeted_experiment.clusters)
     print(f"Results will be saved to: {io.outputs_path}")
 
