@@ -1,6 +1,5 @@
 from isogroup.base.database import Database
-from isogroup.base.feature import Feature
-from isogroup.base.misc import Misc
+
 
 import pandas as pd
 from pathlib import Path
@@ -10,141 +9,80 @@ import logging
 
 class IoHandler:
     """
-    Handles input and output operations for both targeted and untargeted experiments.
-
-    Args:
-        dataset (str): Path to the dataset file containing raw mass spectrometry data.
-        tracer (str): Tracer code used in the experiment (e.g. "13C").
-        mz_tol (float|None): m/z tolerance (in ppm).
-        rt_tol (float|None): Retention time tolerance (in sec).
-        database (str|None): Path to the database file.
-        rt_window (float|None): rt tolerance for clustering (e.g. "10") (Untargeted case).
-        ppm_tol (float|None): m/z tolerance in ppm (Untargeted case).
-        max_atoms (int|None): Maximum number of tracer atoms to consider in a molecule (e.g. "20").
-        outputs_path (str|None): Path to the output directory.    
+    Handles input and output operations.
+ 
     """
-    def __init__(self, dataset, tracer, mz_tol, rt_tol, database=None, max_atoms=None, outputs_path=None): 
-        self.dataset = dataset
+
+    def __init__(self):
+        self.dataset_path = None
         self.dataset_name = None
-        self.database = database
-        self.tracer = tracer
-        self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
-        self.mz_tol = mz_tol
-        self.rt_tol = rt_tol
-        self.max_atoms = max_atoms
-        self.outputs_path = outputs_path
-        
-        self.features = {} # {sample_name: {feature_id: Feature object}}
+        self.database_path = None
+        self.outputs_path = None
 
-    
-    # @property
-    # def rt_tol(self):
-    #     """
-    #     Returns the retention time tolerance used for feature annotation.
-    #     :return: float        
-    #     """
-    #     return self._rt_tol
-
-    # @property
-    # def tracer(self):
-    #     """
-    #     Returns the tracer used for the experiment.
-    #     :return: str | None
-    #     """
-    #     return self._tracer
-
-    # # @property
-    # # def tracer_element(self):
-    # #     """
-    # #     Returns the tracer element used in the experiment.
-    # #     :return: str | None
-    # #     """
-    # #     return self._tracer_element
-
-    # @property
-    # def mz_tol(self):
-    #     """
-    #     Returns the m/z tolerance used for feature annotation.
-    #     :return: float | None
-    #     """
-    #     return self._mz_tol
-    
-    
-    def read_dataset(self):
+    def read_dataset(self, dataset):
         """
         Reads the dataset from the specified file path and loads it into a pandas DataFrame.
         """
+        self.dataset_path = Path(dataset)
 
-        inputdata = Path(self.dataset)
-
-        if not inputdata.exists():
-            raise FileNotFoundError(f"File {self.dataset} does not exist")
-
-        self.dataset_name = inputdata.stem
-        self.dataset = pd.read_csv(inputdata, sep="\t").set_index(["mz", "rt", "id"])
-
+        if not self.dataset_path.exists():
+            raise FileNotFoundError(f"File {self.dataset_path} does not exist.")
+        
+        self.dataset_name = self.dataset_path.stem
+        
+        return pd.read_csv(self.dataset_path, sep="\t")
+         
         # logging.info(f"Dataset loaded from {inputdata} with shape {data.shape}")    
     
-    def read_database(self):
+    def read_database(self, database):
         """
-        Reads the database from the specified file path and initializes a Database object.
+        Reads the database from the specified file path and loads it into a pandas DataFrame.
         """
-        if not isinstance(self.database, str):
-            raise FileNotFoundError(f"File {self.database} does not exist")
+        self.database_path = Path(database)
+
+        if not self.database_path.exists():
+            raise FileNotFoundError(f"File {self.database_path} does not exist.")
         
-        # Load database
-        db_data = pd.read_csv(self.database, sep=";")
-        self.database = Database(dataset=db_data, tracer=self.tracer)
-
-
-    def initialize_experimental_features(self):
-        """
-        Initialize Feature objects from the dataset and organize them by sample.
-        Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
-        Populates `self.features` as a dictionary of the form:
-        {sample_name: {feature_id: Feature object}}
-
-        """
-
-        for idx, _ in self.dataset.iterrows():
-            mz = idx[0]
-            rt = idx[1]
-            id = idx[2]
-
-            # Extract the intensity for each sample in the dataset
-            for sample in self.dataset.columns:
-                if sample not in ["mz", "rt", "id"]:
-                    intensity = self.dataset.loc[idx, sample]
-
-                    # Initialize the experimental features for each sample
-                    feature = Feature(
-                        rt=rt, mz=mz, tracer=self.tracer,
-                        feature_id=id, 
-                        intensity=intensity,
-                        sample=sample
-                        )
-                    
-                    # Add the feature in the list corresponding to the sample
-                    if sample not in self.features:
-                        self.features[sample] = {}
-                    self.features[sample][id] = feature
-
+        return pd.read_csv(self.database_path, sep=";")
     
-    def create_output_directory(self):
+
+    def export_theoretical_database(self, database: Database):
+        """
+        Summarize theoretical features into a DataFrame and optionally export it to a tsv file.
+        """
+
+        # Create a DataFrame to summarize the theoretical features
+        feature_data = {
+            "mz": [],
+            "rt": [],
+            "metabolite": [],
+            "isotopologue": [],
+            "formula": []
+        }
+        for feature in database.theoretical_features:
+            feature_data["mz"].append(feature.mz)
+            feature_data["rt"].append(feature.rt)
+            feature_data["metabolite"].append(', '.join(feature.metabolite))
+            feature_data["isotopologue"].append(', '.join(map(str, feature.isotopologue)))
+            feature_data["formula"].append(feature.formula)
+       
+        pd.DataFrame.from_dict(feature_data).to_csv(Path(f"{self.outputs_path}/{self.dataset_name}_isotopic_db_export.tsv"), 
+                                          sep="\t", 
+                                          index=False)
+
+
+    def create_output_directory(self, outputs_path):
         """
         Create an output directory for saving results.
         """
-        # if self.outputs_path is None:
-        #     raise ValueError("Output path is not set. Please read a dataset first.")
-        
-        res_dir = Path(f"{self.outputs_path}/{self.dataset_name}_res")
+        res_dir = Path(f"{outputs_path}/{self.dataset_name}_res")
         res_dir.mkdir(parents=True, exist_ok=True)
         self.outputs_path = res_dir
         
         # logging.info(f"Results will be saved to: {self.outputs_path}")
 
    
-    def export_annotated_features(self, sample_name = None):
+    def targ_export_features(self, features_to_export, sample_name = None):
         """
         Summarize and export annotated features into a DataFrame and export it to a tsv file.
         
@@ -153,7 +91,7 @@ class IoHandler:
 
         # Create a DataFrame to summarize the experimental features
         feature_data = []
-        for sample in self.features.values():
+        for sample in features_to_export.values():
             for feature in sample.values():
                 feature_data.append({
                     "feature_id": feature.feature_id,
@@ -206,7 +144,7 @@ class IoHandler:
         df.to_csv(f"{self.outputs_path}/{self.dataset_name}_unannotated_features.tsv", sep="\t", index=False)
 
     
-    def export_clusters(self, clusters_to_export, sample_name = None):
+    def targ_export_clusters(self, features, clusters_to_export, sample_name = None):
         """
         Summarize annotated clusters into a DataFrame and export it to a tsv file.
         :param clusters_to_export: dict containing clusters to export
@@ -214,7 +152,7 @@ class IoHandler:
         """
         
         # Check if the sample name is in the DataFrame
-        all_samples = list(self.features.keys())
+        all_samples = list(features.keys())
         if sample_name is not None:
             if sample_name not in all_samples:
                 raise ValueError(f"Sample {sample_name} not found in annotated clusters. Available samples: {', '.join(all_samples)}")
@@ -329,14 +267,12 @@ class IoHandler:
 
 
 # if __name__ == "__main__":
-#     test = IoHandler(dataset=r"C:\Users\kouakou\Documents\IsoGroup_test\data\dataset_test_XCMS.txt",
-#                      tracer="13C",
+#     test = IoHandler(
 #                     )
-#     test.read_dataset()
-#     # test.create_output_directory(r"C:\Users\kouakou\Documents\IsoGroup_test")
-#     test.initialize_experimental_features()
-#     print(test.outputs_path)
-#     print(test.tracer)
-#     print(test._tracer_element)
-#     # test.export_annotated_features()
-#     # print(test.samples)
+    # print(test.read_dataset(r"C:\Users\kouakou\Documents\IsoGroup_test\data\dataset_test_XCMS.txt"))
+
+    # print(test.outputs_path)
+    # print(test.tracer)
+    # print(test._tracer_element)
+    # test.export_annotated_features()
+    # print(test.samples)
