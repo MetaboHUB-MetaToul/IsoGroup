@@ -133,30 +133,26 @@ def process_targeted(args):
 #     print(f"Results will be saved to: {res_dir}")
 
 def process_untargeted(args):
-    io= IoHandler(dataset=args.inputdata, tracer=args.tracer, mz_tol=args.ppm_tol, rt_tol=args.rt_window, max_atoms=args.max_atoms, outputs_path=args.output)
-    io.read_dataset()
-    io.initialize_experimental_features()
-    io.create_output_directory()
-
+    io= IoHandler()
+    dataset = io.read_dataset(args.inputdata)
+    io.create_output_directory(args.output)
 
     untargeted_experiment= UntargetedExperiment(
-        features=io.features,
-        tracer=io.tracer,
-        tracer_element=io._tracer_element,
-        tracer_idx=io._tracer_idx,
-        ppm_tolerance=io.mz_tol,
-        rt_window=io.rt_tol,
-        max_atoms=io.max_atoms,
+        tracer=args.tracer,
+        mz_tol=args.ppm_tol,
+        rt_tol=args.rt_window,
+        max_atoms=args.max_atoms,
         log_file=None)
     
+    untargeted_experiment.initialize_experimental_features(dataset)
 
     untargeted_experiment.build_final_clusters(
         verbose=args.verbose,
         keep_best_candidate=args.kbc,
         keep_richest=args.kr,)
     
-    io.export_unannotated_features()
-    io.clusters_to_dataframe(untargeted_experiment.clusters)
+    io.untarg_export_features(untargeted_experiment.features)
+    io.untarg_export_clusters(untargeted_experiment.clusters)
 
 # -------------------
 # CLI setup
