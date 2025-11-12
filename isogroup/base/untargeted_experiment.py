@@ -1,48 +1,40 @@
-import pandas as pd
-import numpy as np
+from __future__ import annotations
+from isogroup.base.experiment import Experiment
 import bisect
 from collections import defaultdict
-from isogroup.base.feature import Feature
 from isogroup.base.cluster import Cluster
 from isogroup.base.misc import Misc
 import logging
 import time
 from datetime import datetime
 
-class UntargetedExperiment:
+class UntargetedExperiment(Experiment):
     """
     Represents an untargeted mass spectrometry experiment.
     An untargeted experiment contains a collection of features and clusters, along with associated metadata.
 
-    Args:
-        dataset (pd.DataFrame|None): DataFrame c.
-        tracer (str|None): Tracer code used in the experiment (e.g. "13C").
-        tracer_element (str|None): Element extracted from the tracer code.
-        
-        ppm_tolerance (float): m/z tolerance in ppm for clustering.
-        rt_window (float|None): Retention time window for clustering.
-        max_atoms (int|None): Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
     """
 
-    def __init__(self, features : dict, 
-                 tracer: str, 
-                 tracer_element, tracer_idx, 
-                 ppm_tolerance, 
-                 rt_window, 
-                 max_atoms = None, 
-                #  keep_best_candidate: bool = False,
-                #  keep_richest: bool = False,
+    def __init__(self, tracer:str, mz_tol:float, rt_tol:float, max_atoms:int = None, #  keep_best_candidate: bool = False, #  keep_richest: bool = False,
                  log_file: str = "untargeted_experiment_log.txt"):
-        
+        """
+        :param tracer: Tracer code used in the experiment (e.g. "13C").
+        :param mz_tol: m/z tolerance in ppm.
+        :param rt_tol: Retention time tolerance in seconds.
+        :param max_atoms: Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
+        """
+
+        super().__init__(tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, max_atoms=max_atoms)
+
         # self.dataset = dataset
-        self.features = features
+        # self.features = features
         self.log_file = log_file
 
-        self.tracer = tracer
-        self._tracer_element, self._tracer_idx = tracer_element, tracer_idx
-        self.RTwindow = rt_window
-        self.ppm_tolerance = ppm_tolerance
-        self.max_atoms = max_atoms
+        # self.tracer = tracer
+        # self._tracer_element, self._tracer_idx = tracer_element, tracer_idx
+        # self.RTwindow = rt_window
+        # self.ppm_tolerance = ppm_tolerance
+        # self.max_atoms = max_atoms
         self.mzshift_tracer = float(Misc.calculate_mzshift(self.tracer)) if tracer is not None else None
 
         # self.keep_best_candidate = keep_best_candidate
@@ -82,13 +74,13 @@ class UntargetedExperiment:
     #     """
     #     return self._tracer
     
-    @property
-    def tracer_element(self) -> str|None:
-        """
-        Returns the tracer element extracted from the tracer code.
-        :return: str|None
-        """
-        return self._tracer_element
+    # @property
+    # def tracer_element(self):
+    #     """
+    #     Returns the tracer element extracted from the tracer code.
+    #     :return: str|None
+    #     """
+    #     return self._tracer_element
     
 
     def build_final_clusters(self, keep_best_candidate: bool = False, keep_richest: bool = True, verbose: bool = False):
@@ -119,7 +111,7 @@ class UntargetedExperiment:
         # --- Construction of clusters ---
         print(" Building clusters without filtration...", end=" ", flush=True)
         t0 = time.time()
-        self.build_clusters(self.RTwindow, self.ppm_tolerance, self.max_atoms)
+        self.build_clusters(self.rt_tol, self.mz_tol, self.max_atoms)
         clusters_count = len(next(iter(self.clusters.values())))  
         print(f" done ({clusters_count} clusters per sample)")
 
