@@ -118,13 +118,13 @@ class IoHandler:
         # return df
 
     
-    def export_unannotated_features(self):
+    def untarg_export_features(self, features_to_export):
         """
         Export all features to a TSV file (Untargeted case).
         
         """
         records = []
-        for _, features in self.features.items():
+        for _, features in features_to_export.items():
             for f in features.values():
                 # If not in any cluster, mark accordingly
                 cluster_ids = f.in_cluster if f.in_cluster else ["None"]
@@ -141,7 +141,7 @@ class IoHandler:
                 })
 
         df = pd.DataFrame.from_records(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_unannotated_features.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_untargeted_features.tsv", sep="\t", index=False)
 
     
     def targ_export_clusters(self, features, clusters_to_export, sample_name = None):
@@ -227,7 +227,7 @@ class IoHandler:
 
         # return df
     
-    def clusters_to_dataframe(self, cluster_to_export):
+    def untarg_export_clusters(self, cluster_to_export):
         """
         Convert the clusters into a pandas DataFrame for easier analysis and export (Untargeted case).
 
@@ -253,7 +253,7 @@ class IoHandler:
                     })
 
         df = pd.DataFrame.from_records(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_unannotated_clusters.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_untargeted_clusters.tsv", sep="\t", index=False)
         # return pd.DataFrame.from_records(records)
 
 
