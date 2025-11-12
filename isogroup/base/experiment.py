@@ -22,8 +22,7 @@ class Experiment:
         self.max_atoms = max_atoms
         self.database = Database(dataset=database, 
                                  tracer=self._tracer,
-                                 tracer_element=self._tracer_element,
-                                 tracer_idx=self._tracer_idx) if database is not None else None
+                                 tracer_element=self._tracer_element) if database is not None else None
         
         self.features = {} # {sample_name: {feature_id: Feature object}}
 
@@ -119,14 +118,16 @@ class Experiment:
 
 # if __name__ == "__main__":
 #     from isogroup.base.io import IoHandler
+#     from isogroup.base.targeted_experiment import TargetedExperiment
 #     io= IoHandler()
 #     data= io.read_dataset(r"..\..\data\dataset_test_XCMS.txt")
     
 #     database = io.read_database(r"..\..\data\database.csv")
     
-#     test = Experiment(tracer="13C", mz_tol=5, rt_tol=10, database=database)
-#     print(len(test.database.theoretical_features))
+#     test = TargetedExperiment(tracer="13C", mz_tol=5, rt_tol=10, database=database)
+#     # print(len(test.database.theoretical_features))
 # #     theoretical_db=test.initialize_theoretical_database(database)
 # #     io.export_theoretical_database(theoretical_db)
 #     test.initialize_experimental_features(data)
+#     print(test.database.theoretical_features)
 #     # print(test.features["C13_WT_2"])
