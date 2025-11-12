@@ -9,12 +9,13 @@ class TargetedExperiment(Experiment):
     Used to group and annotate detected features from an experimental dataset using a reference database with isotopic tracer information.
     """
 
-    def __init__(self, tracer:str, mz_tol:float, rt_tol:float, database:pd.dataframe):
+    def __init__(self, tracer:str, mz_tol:float, rt_tol:float, database:pd.Dataframe):
         """
         :param tracer: Tracer code used in the experiment (e.g. "13C").
-        database (Database): Database object used for annotation of features.
-        mz_tol (float): m/z tolerance in ppm.
-        rt_tol (float): Retention time tolerance in seconds."""
+        :param mz_tol: m/z tolerance in ppm.
+        :param rt_tol: Retention time tolerance in seconds.
+        :param database: DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
+        """
         super().__init__(tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, database=database)
         # self.features = features
         # self.features = features
