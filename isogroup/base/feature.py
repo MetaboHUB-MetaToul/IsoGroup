@@ -25,7 +25,7 @@ class Feature:
         
         """
 
-    def __init__(self, rt: float, mz: float, tracer: str, intensity:float|None, feature_id = None, counter_formula: list|None=None, formula: list|None=None, sample: str|None=None,
+    def __init__(self, rt: float, mz: float, tracer: str, intensity:float|None, feature_id = None, tracer_element = None, counter_formula: list|None=None, formula: list|None=None, sample: str|None=None,
                  chemical: list|None=None, metabolite: list|None=None, isotopologue: dict|None=None, mz_error: list|None=None, rt_error: list|None=None, **extra_dims):
         """
         Initialize a Feature instance with mass spectrometry data and annotated information.
@@ -33,7 +33,8 @@ class Feature:
         self.rt = float(rt)
         self.mz = float(mz)
         self.tracer = tracer
-        self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer) 
+        self._tracer_element = tracer_element 
+        # self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer) 
         self.intensity = intensity
         self.feature_id = feature_id
         self.chemical = chemical if chemical is not None else []
