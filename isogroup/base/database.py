@@ -51,8 +51,8 @@ class Database:
                 charge=line["charge"],
                 label=line["metabolite"],
             )
-            for i in range(chemical.formula[self._tracer_element] + 1):
-                mz = (chemical.molecular_weight + i * self._delta_mz_tracer
+            for isotopologue in range(chemical.formula[self._tracer_element] + 1):
+                mz = (chemical.molecular_weight + isotopologue * self._delta_mz_tracer
                       + line["charge"] * self._delta_mz_hydrogen)
                 feature = Feature(
                     rt=line["rt"],
@@ -60,7 +60,7 @@ class Database:
                     tracer=self.tracer,
                     intensity=None,
                     chemical=[chemical],
-                    isotopologue=[i],
+                    isotopologue=[isotopologue],
                     metabolite=[chemical.label],
                     formula = line["formula"],
                 )
@@ -92,3 +92,11 @@ class Database:
     #         df.to_csv(filename, sep="\t", index=False)
 
     #         return df
+
+if __name__ == "__main__":
+    from isogroup.base.io import IoHandler
+    io= IoHandler()
+    database_df= io.read_database(r"..\..\data\database.csv")
+    test_db = Database(dataset=database_df, tracer="13C", tracer_element="C")
+    test_db.initialize_theoretical_features()
+    print(test_db.theoretical_features)
