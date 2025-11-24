@@ -8,13 +8,15 @@ class Experiment:
     Represents a mass spectrometry experiment with experimental features.
 
     Args:
+        dataset (pd.DataFrame): DataFrame containing experimental data with columns for m/z, retention time (RT), feature ID, and sample intensities.
         tracer (str): Tracer code used in the experiment (e.g. "13C").
         mz_tol (float) : m/z tolerance (in ppm).
         rt_tol(float) : Retention time tolerance (in sec).
         max_atoms (int|None):  Maximum number of tracer atoms to consider for isotopologues.
         database (pd.DataFrame|None): DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
     """
-    def __init__(self, tracer, mz_tol, rt_tol, max_atoms=None, database=None): 
+    def __init__(self, dataset : pd.DataFrame, tracer, mz_tol, rt_tol, max_atoms=None, database=None): 
+        self.dataset = dataset 
         self._tracer = tracer
         self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
         self._mz_tol = mz_tol
@@ -22,10 +24,10 @@ class Experiment:
         self.max_atoms = max_atoms
         self.database = Database(dataset=database, 
                                  tracer=self._tracer,
-                                 tracer_element=self._tracer_element) if database is not None else None
+                                 tracer_element=self.tracer_element) if database is not None else None
         
         self.features = {} # {sample_name: {feature_id: Feature object}}
-
+        
     @property
     def rt_tol(self):
         """
@@ -83,7 +85,7 @@ class Experiment:
         """
         return self._tracer_idx
 
-    def initialize_experimental_features(self, dataset: pd.DataFrame):
+    def initialize_experimental_features(self):
         """
         Initialize Feature objects from the dataset and organize them by sample.
         Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
@@ -91,7 +93,7 @@ class Experiment:
         :param dataset: DataFrame containing experimental data with columns for m/z, retention time (RT), 
                         feature ID, and sample intensities.
         """
-        dataset = dataset.set_index(["mz", "rt", "id"])
+        dataset = self.dataset.set_index(["mz", "rt", "id"])
         
         for idx, _ in dataset.iterrows():
             mz = idx[0]
@@ -107,27 +109,29 @@ class Experiment:
                     rt=rt, mz=mz, tracer=self.tracer,
                     feature_id=id, 
                     intensity=intensity,
-                    sample=sample
+                    sample=sample,
+                    tracer_element=self.tracer_element,
                     )
                 
                 # Add the feature in the list corresponding to the sample
                 if sample not in self.features:
                     self.features[sample] = {}
                 self.features[sample][id] = feature
+    
 
 
 # if __name__ == "__main__":
-#     from isogroup.base.io import IoHandler
+#     # from isogroup.base.io import IoHandler
 #     from isogroup.base.targeted_experiment import TargetedExperiment
-#     io= IoHandler()
-#     data= io.read_dataset(r"..\..\data\dataset_test_XCMS.txt")
+#     # io= IoHandler()
+#     # data= io.read_dataset(r"..\..\data\dataset_test_XCMS.txt")
     
-#     database = io.read_database(r"..\..\data\database.csv")
+#     # database = io.read_database(r"..\..\data\database.csv")
     
-#     test = TargetedExperiment(tracer="13C", mz_tol=5, rt_tol=10, database=database)
-#     # print(len(test.database.theoretical_features))
-# #     theoretical_db=test.initialize_theoretical_database(database)
-# #     io.export_theoretical_database(theoretical_db)
-#     test.initialize_experimental_features(data)
+#     test = TargetedExperiment(data, tracer="13C", mz_tol=5, rt_tol=10, database=database)
+#     test.initialize_experimental_features()
 #     print(test.database.theoretical_features)
-#     # print(test.features["C13_WT_2"])
+#     io.export_theoretical_database(theoretical_db)
+    # test.initialize_experimental_features()
+    # print(test.database.theoretical_features)
+    # # print(test.features["C13_WT_2"])
