@@ -9,14 +9,14 @@ class TargetedExperiment(Experiment):
     Used to group and annotate detected features from an experimental dataset using a reference database with isotopic tracer information.
     """
 
-    def __init__(self, tracer:str, mz_tol:float, rt_tol:float, database:pd.Dataframe):
+    def __init__(self, dataset, tracer:str, mz_tol:float, rt_tol:float, database:pd.Dataframe):
         """
         :param tracer: Tracer code used in the experiment (e.g. "13C").
         :param mz_tol: m/z tolerance in ppm.
         :param rt_tol: Retention time tolerance in seconds.
         :param database: DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
         """
-        super().__init__(tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, database=database)
+        super().__init__(dataset = dataset, tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, database=database)
         # self.features = features
         # self.features = features
         # self.database = database
@@ -98,22 +98,29 @@ class TargetedExperiment(Experiment):
         Populates `self.clusters` as a dictionary of the form:
         {sample_name: {cluster_id: Cluster object}}
         """
-        cluster_names = []
+        # cluster_names = []
         
-        # Group features by metabolite
-        for sample in self.features.values():
-            for feature in sample.values():
-                cluster_names += feature.metabolite
+        # # Group features by metabolite
+        # for sample in self.features.values():
+        #     for feature in sample.values():
+        #         cluster_names += feature.metabolite
+        
+        # # cluster_names = set(cluster_names)
 
-        cluster_names = set(cluster_names)
+         # Create unique clusters
+        # # # self.clusters = {}
 
-        # Create unique clusters
-        # self.clusters = {}
+        cluster_names = []
+
+        for _, features in self.features.items():
+            for feature in features.values():
+                cluster_names += [metabolite_name for metabolite_name in feature.metabolite 
+                                  if metabolite_name not in cluster_names]
 
         for sample in self.features.keys():
             self.clusters[sample] = {}
-            for i,c in enumerate(cluster_names):
-                features = self.get_features_from_name(c, sample)
+            for index, clusters in enumerate(cluster_names):
+                features = self.get_features_from_name(clusters, sample)
 
                 # Sort features by isotopologues
                 features.sort(key=lambda f: f.isotopologue)
@@ -122,9 +129,10 @@ class TargetedExperiment(Experiment):
                 for feature in features:
                     if not hasattr(feature, "in_cluster") or feature.in_cluster is None:
                         feature.in_cluster = [] 
-                    feature.in_cluster.append(f"C{i}")  
+                    feature.in_cluster.append(f"C{index}")  
 
-                self.clusters[sample][c] = Cluster(features=features, cluster_id=f"C{i}", name=c)
+                self.clusters[sample][clusters] = Cluster(features=features, cluster_id=f"C{index}", name=clusters)
+
     
     def get_features_from_name(self, name, sample_name:str):
         """
@@ -323,3 +331,22 @@ class TargetedExperiment(Experiment):
     #         df.to_csv(filename, sep="\t", index=False)
 
     #     return df
+
+# if __name__ == "__main__":
+#     from isogroup.base.io import IoHandler
+#     from isogroup.base.database import Database
+#     io= IoHandler()
+#     # data= io.read_dataset(r"..\..\data\dataset_test_XCMS.txt")
+#     # database = io.read_database(r"..\..\data\database.csv")
+#     experiment = TargetedExperiment(data, tracer="13C", mz_tol=5, rt_tol=15, database=database)
+#     experiment.initialize_experimental_features()
+#     experiment.annotate_features()
+#     print(experiment.features)
+    # experiment.clusterize()
+    # print(experiment.clusters["Sample_1"].keys())
+    # print(experiment.database.theoretical_features)
+    # experiment.annotate_features()
+    # for feature in experiment.features["Sample_2"].values():
+    #     print("after annotation",feature.feature_id, feature.metabolite, feature.rt_error, feature.mz_error)
+    # print("after annotation",experiment.features)
+    # print("after annotation",experiment.features)
