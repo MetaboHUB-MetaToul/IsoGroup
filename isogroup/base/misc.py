@@ -96,3 +96,13 @@ class Misc:
         else:
             raise NotImplementedError(f"Tracer {tracer_element} not implemented yet.")
         return max(1, int(factor * (mz / element_mass)))
+
+    def calculate_isotopologue_index(candidate_mz, base_mz, mzshift_tracer):
+        """
+        Calculate the theoretical isotopologue index based on m/z values.
+        Args:
+            candidate_mz (float): m/z of the candidate isotopologue.
+            base_mz (float): m/z of the base (unlabeled) feature.
+            mzshift_tracer (float): m/z shift corresponding to the tracer.
+        """
+        return round((candidate_mz - base_mz) / mzshift_tracer)
