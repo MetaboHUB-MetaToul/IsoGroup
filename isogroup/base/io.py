@@ -23,7 +23,7 @@ class IoHandler:
         """
         Reads the dataset from the specified file path and loads it into a pandas DataFrame.
         """
-        self.dataset_path = Path(dataset)
+        self.dataset_path = dataset
 
         if not self.dataset_path.exists():
             raise FileNotFoundError(f"File {self.dataset_path} does not exist.")
@@ -38,7 +38,7 @@ class IoHandler:
         """
         Reads the database from the specified file path and loads it into a pandas DataFrame.
         """
-        self.database_path = Path(database)
+        self.database_path = database
 
         if not self.database_path.exists():
             raise FileNotFoundError(f"File {self.database_path} does not exist.")
