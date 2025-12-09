@@ -1,14 +1,166 @@
 import argparse
-# from isogroup.base.database import Database
 from isogroup.base.targeted_experiment import TargetedExperiment
 from isogroup.base.untargeted_experiment import UntargetedExperiment
 from isogroup.base.io import IoHandler
+import logging
 from pathlib import Path
-import pandas as pd
+
+def _build_logger(args, output_path):
+    """
+    Build the logger object
+    
+    Args:
+        args: command line arguments
+    """
+    logger = logging.getLogger("isogroup")
+    log_file = logging.FileHandler(output_path.with_suffix('.log'))
+    cli_handle = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - '
+                                  '%(message)s')
+    log_file.setFormatter(formatter)
+    cli_handle.setFormatter(formatter)
+    if hasattr(args, 'verbose'):
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+    logger.addHandler(cli_handle)
+    logger.addHandler(log_file)
+    return logger
 
 
 # -------------------
 # Targeted processing
+# -------------------
+
+def process_targeted(args):
+    _build_logger(args, Path(args.output))
+    # load data file
+    io = IoHandler()
+    dataset = io.read_dataset(Path(args.inputdata))
+    io.create_output_directory(Path(args.output))
+    database = io.read_database(Path(args.D))
+
+    targeted_experiment= TargetedExperiment(
+        dataset=dataset,
+        tracer=args.tracer,
+        mz_tol=args.mztol,
+        rt_tol=args.rttol,
+        database=database)
+    io.export_theoretical_database(targeted_experiment.database)
+
+    targeted_experiment.initialize_experimental_features()
+    targeted_experiment.annotate_features()
+    targeted_experiment.clusterize()
+
+    
+    io.targ_export_features(targeted_experiment.features)
+    io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
+    io.clusters_summary(targeted_experiment.clusters)
+    print(f"Results will be saved to: {io.outputs_path}")
+
+# ---------------------
+# Untargeted processing
+# ---------------------
+
+
+def process_untargeted(args):
+    _build_logger(args, Path(args.output))
+    io= IoHandler()
+    dataset = io.read_dataset(Path(args.inputdata))
+    io.create_output_directory(Path(args.output))
+
+    untargeted_experiment= UntargetedExperiment(
+        dataset=dataset,
+        tracer=args.tracer,
+        mz_tol=args.ppm_tol,
+        rt_tol=args.rt_window,
+        max_atoms=args.max_atoms,
+        log_file=None)
+    
+    untargeted_experiment.initialize_experimental_features()
+
+    # untargeted_experiment.build_final_clusters(
+    #     verbose=args.verbose,
+    #     keep_best_candidate=args.kbc,
+    #     keep_richest=args.kr,)
+    untargeted_experiment.build_clusters(
+        RTwindow=args.rt_window,
+        ppm_tolerance=args.ppm_tol,
+        max_atoms=args.max_atoms,
+    )
+    
+    untargeted_experiment.deduplicate_clusters("closest_mz")
+    io.untarg_export_features(untargeted_experiment.features)
+    io.untarg_export_clusters(untargeted_experiment.clusters)
+
+# -------------------
+# CLI setup
+# -------------------
+def build_parser_targeted():
+    parser = argparse.ArgumentParser(
+        prog='isogroup_targeted',
+        description='Annotation of isotopic datasets',
+    )
+
+    parser.add_argument("inputdata", help="measurements file to process")
+    parser.add_argument("-t", "--tracer", type=str, required=True,
+                        help='the isotopic tracer (e.g. "13C")')
+    parser.add_argument("-D", type=str, required=True,
+                        help="path to database file (csv)")
+    parser.add_argument("--mztol", type=float, required=True,
+                        help='mz tolerance in ppm (e.g. "5")')
+    parser.add_argument("--rttol", type=float, required=True,
+                        help='rt tolerance (e.g. "10")')
+    parser.add_argument("-o", "--output", type=str, required=True,
+                        help='output file for the clusters')
+    parser.set_defaults(func=process_targeted)
+    return parser
+
+def build_parser_untargeted():
+    parser = argparse.ArgumentParser(
+        prog='isogroup_untargeted',
+        description='Clustering of isotopic datasets',
+    )
+    parser.add_argument("inputdata", help="measurements file to process")
+    parser.add_argument("-t", "--tracer", type=str, required=True,
+                        help='the isotopic tracer (e.g. "13C")')
+    parser.add_argument("--ppm_tol", type=float, required=True,
+                        help='mz tolerance in ppm for clustering (e.g. "5")')
+    parser.add_argument("--rt_window", type=float, required=True,
+                        help='rt tolerance for clustering (e.g. "10")')
+    parser.add_argument("--max_atoms", type=int, default=None,
+                        help='maximum number of tracer atoms in a molecule (e.g. "20"), optional')
+    # parser.add_argument("--kbc", type=bool, default=False,
+    #                     help='keep only the best candidate among overlapping clusters during clustering (default: False)')
+    # parser.add_argument("--kr", type=bool, default=True,
+    #                     help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
+    parser.add_argument("--keep", type=str, choices=["closest_mz", "longest", "both"],
+                        help='strategy to deduplicate overlapping clusters')
+    parser.add_argument("-o", "--output", type=str,
+                        help='output file for the clusters')
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help='enable verbose logging')
+    parser.set_defaults(func=process_untargeted)
+    return parser
+
+# ---------------------
+# CLI entry point
+# ---------------------
+def main_targeted():
+    parser = build_parser_targeted()
+    args = parser.parse_args()
+    args.func(args)
+
+def main_untargeted():
+    parser = build_parser_untargeted()
+    args = parser.parse_args()
+    args.func(args)
+
+
+# TODO: Homogeneize the output files
+
+# -------------------
+# Old Targeted processing
 # -------------------
 
 # def process_targeted(args):
@@ -58,32 +210,8 @@ import pandas as pd
 #     else:
 #         raise ValueError("No output file provided")
 
-def process_targeted(args):
-    # load data file
-    io = IoHandler()
-    dataset = io.read_dataset(args.inputdata)
-    io.create_output_directory(args.output)
-    database = io.read_database(args.D)
-
-    targeted_experiment= TargetedExperiment(
-        tracer=args.tracer,
-        mz_tol=args.mztol,
-        rt_tol=args.rttol,
-        database=database)
-    io.export_theoretical_database(targeted_experiment.database)
-
-    targeted_experiment.initialize_experimental_features(dataset)
-    targeted_experiment.annotate_features()
-    targeted_experiment.clusterize()
-
-    
-    io.targ_export_features(targeted_experiment.features)
-    io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
-    io.clusters_summary(targeted_experiment.clusters)
-    print(f"Results will be saved to: {io.outputs_path}")
-
 # ---------------------
-# Untargeted processing
+# old Untargeted processing
 # ---------------------
 
 # def process_untargeted(args):
@@ -131,89 +259,3 @@ def process_targeted(args):
 #     experiment.export_features(filename=output.with_suffix('.features.tsv'))
     
 #     print(f"Results will be saved to: {res_dir}")
-
-def process_untargeted(args):
-    io= IoHandler()
-    dataset = io.read_dataset(args.inputdata)
-    io.create_output_directory(args.output)
-
-    untargeted_experiment= UntargetedExperiment(
-        tracer=args.tracer,
-        mz_tol=args.ppm_tol,
-        rt_tol=args.rt_window,
-        max_atoms=args.max_atoms,
-        log_file=None)
-    
-    untargeted_experiment.initialize_experimental_features(dataset)
-
-    untargeted_experiment.build_final_clusters(
-        verbose=args.verbose,
-        keep_best_candidate=args.kbc,
-        keep_richest=args.kr,)
-    
-    io.untarg_export_features(untargeted_experiment.features)
-    io.untarg_export_clusters(untargeted_experiment.clusters)
-
-# -------------------
-# CLI setup
-# -------------------
-def build_parser_targeted():
-    parser = argparse.ArgumentParser(
-        prog='isogroup_targeted',
-        description='Annotation of isotopic datasets',
-    )
-
-    parser.add_argument("inputdata", help="measurements file to process")
-    parser.add_argument("-t", "--tracer", type=str, required=True,
-                        help='the isotopic tracer (e.g. "13C")')
-    parser.add_argument("-D", type=str, required=True,
-                        help="path to database file (csv)")
-    parser.add_argument("--mztol", type=float, required=True,
-                        help='mz tolerance in ppm (e.g. "5")')
-    parser.add_argument("--rttol", type=float, required=True,
-                        help='rt tolerance (e.g. "10")')
-    parser.add_argument("-o", "--output", type=str, required=True,
-                        help='output file for the clusters')
-    parser.set_defaults(func=process_targeted)
-    return parser
-
-def build_parser_untargeted():
-    parser = argparse.ArgumentParser(
-        prog='isogroup_untargeted',
-        description='Clustering of isotopic datasets',
-    )
-    parser.add_argument("inputdata", help="measurements file to process")
-    parser.add_argument("-t", "--tracer", type=str, required=True,
-                        help='the isotopic tracer (e.g. "13C")')
-    parser.add_argument("--ppm_tol", type=float, required=True,
-                        help='mz tolerance in ppm for clustering (e.g. "5")')
-    parser.add_argument("--rt_window", type=float, required=True,
-                        help='rt tolerance for clustering (e.g. "10")')
-    parser.add_argument("--max_atoms", type=int, default=None,
-                        help='maximum number of tracer atoms in a molecule (e.g. "20"), optional')
-    parser.add_argument("--kbc", type=bool, default=False,
-                        help='keep only the best candidate among overlapping clusters during clustering (default: False)')
-    parser.add_argument("--kr", type=bool, default=True,
-                        help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
-    parser.add_argument("-o", "--output", type=str,
-                        help='output file for the clusters')
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help='enable verbose logging')
-    parser.set_defaults(func=process_untargeted)
-    return parser
-
-# ---------------------
-# CLI entry point
-# ---------------------
-def main_targeted():
-    parser = build_parser_targeted()
-    args = parser.parse_args()
-    args.func(args)
-
-def main_untargeted():
-    parser = build_parser_untargeted()
-    args = parser.parse_args()
-    args.func(args)
-
-
-# TODO: Homogeneize the output files
