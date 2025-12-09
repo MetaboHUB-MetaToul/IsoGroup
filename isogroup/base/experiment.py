@@ -1,6 +1,9 @@
 from isogroup.base.feature import Feature
 from isogroup.base.misc import Misc
 import pandas as pd
+import logging
+
+logger = logging.getLogger(f"IsoGroup")
 
 class Experiment:
     """
@@ -114,8 +117,9 @@ class Experiment:
                 if sample not in self.features:
                     self.features[sample] = {}
                 self.features[sample][id] = feature
-    
-
+        
+        features_count = len(next(iter(self.features.values())))
+        logger.info(f"Initialized {features_count} features for {len(self.features)} samples")
 
 # if __name__ == "__main__":
 #     # from isogroup.base.io import IoHandler

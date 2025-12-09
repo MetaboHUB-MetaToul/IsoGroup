@@ -8,6 +8,9 @@ import logging
 import time
 from datetime import datetime
 
+logger = logging.getLogger(f"IsoGroup")
+
+
 class UntargetedExperiment(Experiment):
     """
     Represents an untargeted mass spectrometry experiment.
@@ -15,8 +18,7 @@ class UntargetedExperiment(Experiment):
 
     """
 
-    def __init__(self, dataset, tracer:str, mz_tol:float, rt_tol:float, max_atoms:int = None, #  keep_best_candidate: bool = False, #  keep_richest: bool = False,
-                 log_file: str = "untargeted_experiment_log.txt"):
+    def __init__(self, dataset, tracer:str, mz_tol:float, rt_tol:float, max_atoms:int = None) : #  keep_best_candidate: bool = False, #  keep_richest: bool = False,
         """
         :param tracer: Tracer code used in the experiment (e.g. "13C").
         :param mz_tol: m/z tolerance in ppm.
@@ -28,7 +30,7 @@ class UntargetedExperiment(Experiment):
 
         # self.dataset = dataset
         # self.features = features
-        self.log_file = log_file
+        # self.log_file = log_file
 
         # self.tracer = tracer
         # self._tracer_element, self._tracer_idx = tracer_element, tracer_idx
@@ -43,13 +45,13 @@ class UntargetedExperiment(Experiment):
         self.unclustered_features: dict = {}  # {sample_name: [Feature objects]}
 
         # --- Set up logging ---
-        self.log_file = log_file
-        logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-        self.logger = logging.getLogger("IsoGroup.UntargetedExperiment")
-        self.logger.info(f"Tracer: {self.tracer}, Tracer element: {self.tracer_element}, m/z shift: {self.mzshift_tracer}")
+        # self.log_file = log_file
+        # logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        # self.logger = logging.getLogger("IsoGroup.UntargetedExperiment")
+        # self.logger.info(f"Tracer: {self.tracer}, Tracer element: {self.tracer_element}, m/z shift: {self.mzshift_tracer}")
 
 
-    def build_final_clusters(self, keep_best_candidate: bool = False, keep_richest: bool = True, verbose: bool = False):
+    def build_final_clusters(self):
         """
         Complete pipeline to build and deduplicate clusters from the dataset with logging and timing.
         Parameters:
@@ -61,59 +63,57 @@ class UntargetedExperiment(Experiment):
         """
         start_time = time.time()
         start_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.logger.info(f"Starting untargeted clustering pipeline")
-
 
         # --- Initialization of features ---
-        print(" Initializing features...", end=" ", flush=True)
+        # print(" Initializing features...", end=" ", flush=True)
         # t0 = time.time()
         # self.initialize_experimental_features()
-        features_count = len(next(iter(self.features.values())))
-        nb_samples = len(self.features)
-        print(f" done ({features_count} features per sample)")
-        self.logger.info(f"Initialized {features_count} features for {nb_samples} samples")
+        # features_count = len(next(iter(self.features.values())))
+        # nb_samples = len(self.features)
+        # # print(f" done ({features_count} features per sample)")
+        # logger.info(f"Initialized {features_count} features for {nb_samples} samples")
 
 
         # --- Construction of clusters ---
-        print(" Building clusters without filtration...", end=" ", flush=True)
+        # print(" Building clusters without filtration...", end=" ", flush=True)
         # t0 = time.time()
         self.build_clusters(self.rt_tol, self.mz_tol, self.max_atoms)
-        clusters_count = len(next(iter(self.clusters.values())))  
-        print(f" done ({clusters_count} clusters per sample)")
+        # clusters_count = len(next(iter(self.clusters.values())))  
+        # print(f" done ({clusters_count} clusters per sample)")
 
         # --- Deduplication and cleaning of clusters ---
-        print(" Cleaning clusters...", end=" ", flush=True)
+        # print(" Cleaning clusters...", end=" ", flush=True)
         # t0 = time.time()
-        merged, subset_removed, final, unclustered = self.deduplicate_clusters(keep_best_candidate=keep_best_candidate, keep_richest=keep_richest)
-        print(f"→ {merged} merged, {subset_removed} subsets removed, {final} final clusters remained/sample")
-        self.logger.info(
-            f"Deduplication completed: merged clusters={merged}, removed subsets={subset_removed}, final cleaned clusters={final}, unclustered features={unclustered}"
-        )
+        # merged, subset_removed, final, unclustered = self.deduplicate_clusters(keep_best_candidate=keep_best_candidate, keep_richest=keep_richest)
+        # print(f"→ {merged} merged, {subset_removed} subsets removed, {final} final clusters remained/sample")
+        # self.logger.info(
+        #     f"Deduplication completed: merged clusters={merged}, removed subsets={subset_removed}, final cleaned clusters={final}, unclustered features={unclustered}"
+        # )
 
         total_time = time.time() - start_time
-        print(f"[IsoGroup] Untargeted clustering completed in {total_time:.2f} seconds.")
-        self.logger.info(f"Pipeline completed in {total_time:.2f} seconds.")
+        # print(f"[IsoGroup] Untargeted clustering completed in {total_time:.2f} seconds.")
+        # self.logger.info(f"Pipeline completed in {total_time:.2f} seconds.")
 
         # --- Verbose logging to file ---
-        if verbose:
-            summary = [
-                ("Start Time", start_dt),
-                ("Tracer", self.tracer),
-                ("Number of samples", nb_samples),
-                ("Features/sample", features_count),
-                ("RT window (s)", self.RTwindow),
-                ("m/z tolerance (ppm)", self.ppm_tolerance),
-                ("Clusters before cleaning", clusters_count),
-                ("Clusters merged", merged),
-                ("Subset clusters removed", subset_removed),
-                ("Final isotopic clusters/sample", final),
-                ("Unclustered features", unclustered),
-                ("Total time (s)", f"{total_time:.2f}")
-            ]
-            with open(self.log_file, "a") as f:
-                f.write("\n" + "=" * 80 + "\nUntargeted Isotopic Clustering Summary\n" + "=" * 80 + "\n")
-                for key, value in summary:
-                    f.write(f"{key}: {value}\n")
+        # if verbose:
+        #     summary = [
+        #         ("Start Time", start_dt),
+        #         ("Tracer", self.tracer),
+        #         ("Number of samples", nb_samples),
+        #         ("Features/sample", features_count),
+        #         ("RT window (s)", self.RTwindow),
+        #         ("m/z tolerance (ppm)", self.ppm_tolerance),
+        #         ("Clusters before cleaning", clusters_count),
+        #         ("Clusters merged", merged),
+        #         ("Subset clusters removed", subset_removed),
+        #         ("Final isotopic clusters/sample", final),
+        #         ("Unclustered features", unclustered),
+        #         ("Total time (s)", f"{total_time:.2f}")
+        #     ]
+        #     with open(self.log_file, "a") as f:
+        #         f.write("\n" + "=" * 80 + "\nUntargeted Isotopic Clustering Summary\n" + "=" * 80 + "\n")
+        #         for key, value in summary:
+        #             f.write(f"{key}: {value}\n")
 
         # TODO: Add Dataset name in summary
         # TODO: Erase previous log file content if any
@@ -130,7 +130,7 @@ class UntargetedExperiment(Experiment):
         # self._ppm_tolerance = ppm_tolerance
 
         if not self.features:
-            raise ValueError("Features not initialized.")
+            raise ValueError("Features must be initialized before building clusters.")
 
         # self.clusters = {}
 
@@ -141,15 +141,25 @@ class UntargetedExperiment(Experiment):
     
             clusters = {}
             cluster_id_local = 0
-        
+
+            logger.debug("----------------------------------")
+            logger.debug(f"Building clusters for sample: {sample_name} with {len(all_features)} features")
+            logger.debug("----------------------------------")
+            logger.debug(f"---- Candidates within RT window (±{RTwindow} sec) ----")
+
             # For each feature, find potential isotopologues within the RT window
             for base_feature in all_features:
+                logger.debug(f"Feature {base_feature.feature_id} (m/z: {base_feature.mz}, rt: {base_feature.rt})")
+                
                 # --- Find candidates within the RT window ---
                 left_bound = bisect.bisect_left(rts, base_feature.rt - RTwindow)
                 right_bound = bisect.bisect_right(rts, base_feature.rt + RTwindow)
 
                 candidates = all_features[left_bound:right_bound]
                 potential_group = {base_feature}
+
+                logger.debug(f"Features candidates: {[candidate.feature_id for candidate in candidates]}")
+                
                 # --- Identification of candidates for isotopologues ---
                 for candidate in candidates:
                     if candidate == base_feature:
@@ -159,7 +169,7 @@ class UntargetedExperiment(Experiment):
                     iso_index = Misc.calculate_isotopologue_index(candidate.mz, base_feature.mz, self.mzshift_tracer)
                     # Define a maximum number of tracer atoms if specified
                     max_iso = Misc.get_max_isotopologues_for_mz(base_feature.mz, self.tracer_element) if max_atoms is None else max_atoms
-
+                    
                     if abs(iso_index) > max_iso:
                         continue
                     
@@ -168,7 +178,9 @@ class UntargetedExperiment(Experiment):
 
                     if delta_ppm <= ppm_tolerance:
                         potential_group.add(candidate)                
-                
+                        
+                logger.debug(f"Potential isotopologues: {[f.feature_id for f in potential_group], delta_ppm}\n")
+
                 # --- If a group of isotopologues is found, create a cluster ---
                 if len(potential_group) > 1:
                     cluster_id = f"C{cluster_id_local}"
@@ -188,32 +200,40 @@ class UntargetedExperiment(Experiment):
                     clusters[cluster_id] = Cluster(cluster_id=cluster_id, features=group_sorted)
                     cluster_id_local += 1
 
-            self.clusters[sample_name] = clusters          
-            
+            self.clusters[sample_name] = clusters  
 
+            logger.info(f"Total clusters formed per sample : {len(clusters)}\n")
+            logger.debug(f"---- Clusters formed ----")       
+            for cluster in clusters.values():
+                logger.debug(f"Cluster {cluster.cluster_id}: Features {[f.feature_id for f in cluster.features]}")
 
     def _keep_longest_cluster(self, cluster):
         """
-        Retain only the largest cluster.
+        Retain only the longest cluster.
         """
         subsets_to_remove = []
         signatures = {cid: set(f.feature_id for f in c.features) for cid, c in cluster.items()}
-        # print("signatures:", signatures)
         sorted_clusters = sorted(signatures.items(), key=lambda x: len(x[1]), reverse=True)
-        # print("sorted clusters:", sorted_clusters)
         kept = []
         # Compare from largest to smallest cluster to identify subsets
         # If a smaller cluster is a subset of any kept larger cluster, mark it for removal
+        logger.debug("Clusters sorted by size:")
         for cid, sig1 in sorted_clusters:
+            logger.debug(f"Cluster {cid} : {sig1}")
             is_subset = False
             for c_id, sig2 in kept:
                 if sig1 < sig2:
                     is_subset = True
-                    subsets_to_remove.append(f"{sig1} is subset of {sig2}")
+                    subsets_to_remove.append(f"{cid} removed (subset of {c_id})")
                     del cluster[cid]
                     break
+
             if not is_subset:
                 kept.append((cid, sig1))
+
+        logger.info(f"→ {len(subsets_to_remove)} subsets removed.")
+        for subset in subsets_to_remove:
+            logger.debug(f" → {subset}")
 
     def _keep_closest_mz_candidate(self, cluster):
         """
@@ -222,12 +242,13 @@ class UntargetedExperiment(Experiment):
         for cluster in cluster.values():
             iso_to_candidate  = defaultdict(list)
             base_mz = cluster.lowest_mz
-            
+            logger.debug(f"Lowest mz in cluster {cluster.cluster_id} : {base_mz}")
             for feature in cluster.features:
                 iso_index = Misc.calculate_isotopologue_index(feature.mz, base_mz, self.mzshift_tracer)
                 iso_to_candidate[iso_index].append(feature)
                 cluster.features = [min(candidates, key=lambda f: abs(f.mz - (base_mz + iso * self.mzshift_tracer))) for iso, candidates in iso_to_candidate.items()]
-
+            logger.debug(f"Cluster {cluster.cluster_id} after keeping closest mz candidates: {[f.feature_id for f in cluster.features]}")
+    
     def deduplicate_clusters(self, keep: str=None):
         """
         Clean up and deduplicate clusters by :
@@ -241,9 +262,14 @@ class UntargetedExperiment(Experiment):
                         "best_candidate" to retain only the feature with the highest intensity for each isotopologue within a cluster,
                         or "both" to apply both strategies.
         """
+        logger.info("----------------------------------")
+        logger.info(f"Deduplicating clusters")
+        logger.info("----------------------------------\n")
+
         final_clusters = {}
-        merged = 0
+        
         for sample, clusters in self.clusters.items():
+            merged = 0
             # --- Merge identical clusters ---
             final_clusters[sample] = {}
             seen_signatures = {}
@@ -255,10 +281,15 @@ class UntargetedExperiment(Experiment):
                     final_clusters[sample][cluster.cluster_id] = cluster
                 else:
                     merged += 1
+            logger.info("Merging identical clusters...")
+            logger.info(f"→ {merged} identical clusters merged.\n")    
+
             # --- Remove subset clusters if keep_richest is True ---
             if keep == "longest":
+                logger.info("------ Removing subset clusters (keeping longest clusters) ------\n")
                 self._keep_longest_cluster(final_clusters[sample])
             elif keep =="closest_mz":
+                logger.info("------ Removing subset clusters (keeping closest mz feature candidate for each isotopologues) ------\n")
                 self._keep_closest_mz_candidate(final_clusters[sample])
             elif keep == "both":
                 self._keep_longest_cluster(final_clusters[sample])
@@ -290,16 +321,20 @@ class UntargetedExperiment(Experiment):
             final = len(next(iter(self.clusters.values()))) if self.clusters else 0
             unclustered = sum(1 for f in next(iter(self.features.values())).values() if not f.in_cluster) if self.features else 0
             # return merged, subset_removed, final, unclustered
-
+            
 
 
 # if __name__ == "__main__":
 #     from isogroup.base.io import IoHandler
 #     import pandas as pd
+#     from pathlib import Path
 #     # from isogroup.base.database import Database
 #     io = IoHandler()
-#     # data= io.read_dataset(r"..\..\data\dataset_test_XCMS.txt")
+#     data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
 #     untargeted = UntargetedExperiment(dataset=data, tracer="13C", mz_tol=5, rt_tol=15)
+#     untargeted.initialize_experimental_features()
+#     untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
+#     untargeted.deduplicate_clusters("closest_mz")
 #     untargeted.initialize_experimental_features()
 #     untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
 #     # print(untargeted.clusters)
