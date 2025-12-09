@@ -2,6 +2,7 @@ from __future__ import annotations
 import pandas as pd
 from isogroup.base.experiment import Experiment
 from isogroup.base.cluster import Cluster
+from isogroup.base.database import Database
 
 class TargetedExperiment(Experiment):
     """
@@ -17,16 +18,16 @@ class TargetedExperiment(Experiment):
         :param database: DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
         """
         super().__init__(dataset = dataset, tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, database=database)
-        # self.features = features
-        # self.features = features
-        # self.database = database
+        self.database = Database(dataset=database, 
+                                 tracer=self._tracer,
+                                 tracer_element=self.tracer_element)
         # self.mz_tol = mz_tol
         # self.rt_tol = rt_tol
 
         # self.tracer = tracer
         # self.cluster = cluster
         # self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
-        self.clusters = {} # {sample_name: {cluster_id: Cluster object}}
+       
         
 
     # @property

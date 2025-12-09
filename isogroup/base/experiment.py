@@ -1,6 +1,5 @@
 from isogroup.base.feature import Feature
 from isogroup.base.misc import Misc
-from isogroup.base.database import Database
 import pandas as pd
 
 class Experiment:
@@ -13,7 +12,7 @@ class Experiment:
         mz_tol (float) : m/z tolerance (in ppm).
         rt_tol(float) : Retention time tolerance (in sec).
         max_atoms (int|None):  Maximum number of tracer atoms to consider for isotopologues.
-        database (pd.DataFrame|None): DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
+        database (None): DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
     """
     def __init__(self, dataset : pd.DataFrame, tracer, mz_tol, rt_tol, max_atoms=None, database=None): 
         self.dataset = dataset 
@@ -22,11 +21,9 @@ class Experiment:
         self._mz_tol = mz_tol
         self._rt_tol = rt_tol
         self.max_atoms = max_atoms
-        self.database = Database(dataset=database, 
-                                 tracer=self._tracer,
-                                 tracer_element=self.tracer_element) if database is not None else None
-        
+        self.database = database
         self.features = {} # {sample_name: {feature_id: Feature object}}
+        self.clusters = {} # {sample_name: {cluster_id: Cluster object}}
         
     @property
     def rt_tol(self):
