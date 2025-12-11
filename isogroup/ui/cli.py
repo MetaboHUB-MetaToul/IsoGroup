@@ -1,4 +1,5 @@
 import argparse
+import isogroup
 from isogroup.base.targeted_experiment import TargetedExperiment
 from isogroup.base.untargeted_experiment import UntargetedExperiment
 from isogroup.base.io import IoHandler
@@ -12,33 +13,41 @@ def _build_logger(args, output_path):
     Args:
         args: command line arguments
     """
-    logger = logging.getLogger("isogroup")
-    log_file = logging.FileHandler(output_path.with_suffix('.log'))
+    _logger = logging.getLogger("IsoGroup")
+    log_file = logging.FileHandler(f"{output_path}/log.txt", mode='w')
     cli_handle = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - '
                                   '%(message)s')
     log_file.setFormatter(formatter)
     cli_handle.setFormatter(formatter)
-    if hasattr(args, 'verbose'):
-        logger.setLevel(logging.DEBUG)
+    if args.verbose :
+        _logger.setLevel(logging.DEBUG)
     else:
-        logger.setLevel(logging.INFO)
-    logger.addHandler(cli_handle)
-    logger.addHandler(log_file)
-    return logger
+        _logger.setLevel(logging.INFO)
+
+    _logger.addHandler(cli_handle)
+    _logger.addHandler(log_file)
+    return _logger
 
 
 # -------------------
 # Targeted processing
 # -------------------
 
-def process_targeted(args):
-    _build_logger(args, Path(args.output))
+def targeted_process(args):
+    
     # load data file
     io = IoHandler()
     dataset = io.read_dataset(Path(args.inputdata))
     io.create_output_directory(Path(args.output))
+
+    _logger = _build_logger(args, io.outputs_path)
+    _logger.info("=============================================")
+    _logger.info(f"Using IsoGroup targeted version: {isogroup.__version__}")    
+    _logger.info("=============================================\n")
+    _logger.info(f"Dataset loaded from {args.inputdata}")
     database = io.read_database(Path(args.D))
+    _logger.info(f"Database loaded from {args.D}\n")
 
     targeted_experiment= TargetedExperiment(
         dataset=dataset,
@@ -46,28 +55,43 @@ def process_targeted(args):
         mz_tol=args.mztol,
         rt_tol=args.rttol,
         database=database)
+    
+    _logger.info("-------- Parameters --------")
+    _logger.info(f"  Tracer : {args.tracer}")
+    _logger.info(f"  m/z tolerance (ppm) : {args.mztol}")
+    _logger.info(f"  RT tolerance (sec) : {args.rttol}")
+    _logger.info("----------------------------\n")
+
     io.export_theoretical_database(targeted_experiment.database)
 
-    targeted_experiment.initialize_experimental_features()
-    targeted_experiment.annotate_features()
-    targeted_experiment.clusterize()
-
+    targeted_experiment.run_targeted_pipeline()
     
     io.targ_export_features(targeted_experiment.features)
     io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
     io.clusters_summary(targeted_experiment.clusters)
-    print(f"Results will be saved to: {io.outputs_path}")
+    _logger.info(f"Path to results files: {io.outputs_path}")
 
 # ---------------------
 # Untargeted processing
 # ---------------------
 
-
-def process_untargeted(args):
-    _build_logger(args, Path(args.output))
+def untargeted_process(args):
     io= IoHandler()
     dataset = io.read_dataset(Path(args.inputdata))
     io.create_output_directory(Path(args.output))
+
+    _logger=_build_logger(args, io.outputs_path)
+    _logger.info("=============================================")
+    _logger.info(f"Using IsoGroup untargeted version: {isogroup.__version__}")    
+    _logger.info("=============================================\n")
+    _logger.info(f"Dataset loaded from {args.inputdata}\n")
+
+    _logger.info("-------- Parameters --------")
+    _logger.info(f"  Tracer : {args.tracer}")
+    _logger.info(f"  m/z tolerance (ppm) : {args.ppm_tol}")
+    _logger.info(f"  RT tolerance (sec) : {args.rt_window}")
+    _logger.info(f"  Max atoms : {args.max_atoms}")
+    _logger.info("----------------------------\n")
 
     untargeted_experiment= UntargetedExperiment(
         dataset=dataset,
@@ -75,23 +99,17 @@ def process_untargeted(args):
         mz_tol=args.ppm_tol,
         rt_tol=args.rt_window,
         max_atoms=args.max_atoms,
-        log_file=None)
+        keep=args.keep)
     
-    untargeted_experiment.initialize_experimental_features()
-
     # untargeted_experiment.build_final_clusters(
     #     verbose=args.verbose,
     #     keep_best_candidate=args.kbc,
     #     keep_richest=args.kr,)
-    untargeted_experiment.build_clusters(
-        RTwindow=args.rt_window,
-        ppm_tolerance=args.ppm_tol,
-        max_atoms=args.max_atoms,
-    )
+    untargeted_experiment.run_untargeted_pipeline()
     
-    untargeted_experiment.deduplicate_clusters("closest_mz")
     io.untarg_export_features(untargeted_experiment.features)
     io.untarg_export_clusters(untargeted_experiment.clusters)
+    _logger.info(f"Path to results files: {io.outputs_path}")
 
 # -------------------
 # CLI setup
@@ -113,7 +131,9 @@ def build_parser_targeted():
                         help='rt tolerance (e.g. "10")')
     parser.add_argument("-o", "--output", type=str, required=True,
                         help='output file for the clusters')
-    parser.set_defaults(func=process_targeted)
+    parser.add_argument("-v", "--verbose",
+                        help='enable verbose logging', action="store_true")
+    parser.set_defaults(func=targeted_process)
     return parser
 
 def build_parser_untargeted():
@@ -134,13 +154,13 @@ def build_parser_untargeted():
     #                     help='keep only the best candidate among overlapping clusters during clustering (default: False)')
     # parser.add_argument("--kr", type=bool, default=True,
     #                     help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
-    parser.add_argument("--keep", type=str, choices=["closest_mz", "longest", "both"],
+    parser.add_argument("--keep", type=str, default=None,
                         help='strategy to deduplicate overlapping clusters')
     parser.add_argument("-o", "--output", type=str,
                         help='output file for the clusters')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help='enable verbose logging')
-    parser.set_defaults(func=process_untargeted)
+    parser.set_defaults(func=untargeted_process)
     return parser
 
 # ---------------------
