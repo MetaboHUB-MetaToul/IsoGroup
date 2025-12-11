@@ -3,6 +3,10 @@ import pandas as pd
 from isogroup.base.experiment import Experiment
 from isogroup.base.cluster import Cluster
 from isogroup.base.database import Database
+import logging
+import time
+
+logger = logging.getLogger(f"IsoGroup")
 
 class TargetedExperiment(Experiment):
     """
@@ -27,10 +31,143 @@ class TargetedExperiment(Experiment):
         # self.tracer = tracer
         # self.cluster = cluster
         # self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
-       
+
+    def run_targeted_pipeline(self):
+        """
+        Run the full targeted annotation pipeline for the experiment.
+        
+        This includes:
+        - Initializing Feature objects from the dataset.
+        - Matching experimental features to the database within specified tolerances.
+        - Clustering features by metabolite names.
+        """
+        start_time = time.time()
+        
+        self.initialize_experimental_features()
+        self.annotate_features()
+        self.clusterize()
+
+        total_time = time.time() - start_time
+
+        logger.info(f"Targeted clustering completed in {total_time:.2f} seconds.")
+
+    def annotate_features(self):
+        """
+        Annotate experimental features by matching them with the database 
+        features within specified m/z and retention time tolerances.
+
+        """
+        logger.info("Find matches between experimental features and database features...")
+        
+        nb_features_annotated = 0 
+
+        for features_id in self.features.values():
+            for feature in features_id.values():    
+                for db_feature in self.database.theoretical_features:
+                    # Calculate the exact mz and rt errors
+                    mz_error = (db_feature.mz - feature.mz)
+                    rt_error = (db_feature.rt - feature.rt)
+                    # Covert mz_error to ppm 
+                    mz_error = (mz_error / feature.mz) * 1e6
+
+                    # Check if the experimental feature is within tolerance
+                    if abs(mz_error) <= self.mz_tol and abs(rt_error) <= self.rt_tol:
+                        feature.chemical.append(db_feature.chemical[0])
+                        feature.isotopologue.append(db_feature.isotopologue[0])
+                        feature.metabolite.append(db_feature.chemical[0].label)
+                        feature.formula.append(db_feature.chemical[0].formula)
+                        feature.mz_error.append(mz_error)
+                        feature.rt_error.append(rt_error)
+                        nb_features_annotated += 1
+                        logger.debug(f"Feature {feature.feature_id} in sample {feature.sample} annotated with {db_feature.chemical[0].label} (isotopologue: {db_feature.isotopologue[0]})")
+                        logger.debug(f" - mz error (ppm): {mz_error}, rt error (sec): {rt_error}")
+        
+        logger.info(f"    => {nb_features_annotated} experimental features matched with database features.\n")
         
 
-    # @property
+    def clusterize(self):
+        """
+        Group features by metabolite names within each sample and assign a unique cluster ID to each group.
+        Populates `self.clusters` as a dictionary of the form:
+        {sample_name: {cluster_id: Cluster object}}
+        """
+        # cluster_names = []
+        
+        # # Group features by metabolite
+        # for sample in self.features.values():
+        #     for feature in sample.values():
+        #         cluster_names += feature.metabolite
+        
+        # # cluster_names = set(cluster_names)
+
+         # Create unique clusters
+        # # # self.clusters = {}
+        logger.info("Clustering features by metabolite names...")
+        
+        cluster_names = []
+
+        for _, features in self.features.items():
+            for feature in features.values():
+                cluster_names += [metabolite_name for metabolite_name in feature.metabolite 
+                                  if metabolite_name not in cluster_names]
+
+        for sample in self.features.keys():
+            self.clusters[sample] = {}
+            for index, clusters in enumerate(cluster_names):
+                features = self.get_features_from_name(clusters, sample)
+                
+                # Sort features by isotopologues
+                features.sort(key=lambda f: f.isotopologue)
+                # Assign the cluster_id to the features in the cluster
+                for feature in features:
+                    if not hasattr(feature, "in_cluster") or feature.in_cluster is None:
+                        feature.in_cluster = [] 
+                    feature.in_cluster.append(f"C{index}")  
+
+                self.clusters[sample][clusters] = Cluster(features=features, cluster_id=f"C{index}", name=clusters)
+                logger.debug(f"Cluster C{index} ({clusters}) created with {len(features)} features in sample {sample}.")
+                logger.debug(f"    {[features.feature_id for features in features]} ")
+        
+        logger.info(f"    => {len(cluster_names)} clusters created.\n")
+    
+    def get_features_from_name(self, name, sample_name:str):
+        """
+        Retrieve all features in a given sample that are annotated with a specific metabolite name.
+        :param name: Name of the metabolite to retrieve features for
+        :param sample_name: Name of the sample to retrieve features from
+        :return: List of Feature objects that match the metabolite name in the specified sample
+        """
+        features = []
+        for feature in self.features[sample_name].values():
+            if name in feature.metabolite:
+                features.append(feature)
+        return features
+
+    def get_clusters_from_name(self, name, sample_name:str):
+        """
+        Get a cluster from the experiment by its name, in a given sample if provided
+        :param name: Name of the cluster to retrieve
+        :param sample_name: Name of the sample to retrieve the cluster from
+        :return: Cluster object if found, None otherwise
+        """
+        for cluster in self.clusters[sample_name].values():
+            if cluster.name == name:
+                return cluster
+        return None
+    
+# if __name__ == "__main__":
+#     from isogroup.base.io import IoHandler
+#     from isogroup.base.database import Database
+#     from pathlib import Path
+#     io= IoHandler()
+#     data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
+#     database = io.read_database(Path(r"..\..\data\database.csv"))
+#     experiment = TargetedExperiment(data, tracer="13C", mz_tol=5, rt_tol=15, database=database)
+    
+#     experiment.run_targeted_pipeline()
+    
+###############################################################################
+        # @property
     # def rt_tol(self):
     #     """
     #     Returns the retention time tolerance used for feature annotation.
@@ -62,103 +199,6 @@ class TargetedExperiment(Experiment):
     #     """
     #     return self._mz_tol
     
-    def annotate_features(self):
-        """
-        Annotate experimental features by matching them with the database 
-        features within specified m/z and retention time tolerances.
-
-        """
-
-        for sample in self.features.values():
-            for feature in sample.values():
-                    
-                for db_feature in self.database.theoretical_features:
-
-                    # Calculate the exact mz and rt errors
-                    mz_error = (db_feature.mz - feature.mz)
-                    rt_error = (db_feature.rt - feature.rt)
-
-                    # Covert mz_error to ppm 
-                    mz_error = (mz_error / feature.mz) * 1e6
-
-                    # Check if the experimental feature is within tolerance
-                    if abs(mz_error) <= self.mz_tol and abs(rt_error) <= self.rt_tol:
-                        feature.chemical.append(db_feature.chemical[0])
-                        feature.isotopologue.append(db_feature.isotopologue[0])
-                        feature.metabolite.append(db_feature.chemical[0].label)
-                        feature.formula.append(db_feature.chemical[0].formula)
-                        feature.mz_error.append(mz_error)
-                        feature.rt_error.append(rt_error)
-
-        # self._mz_tol = mz_tol
-        # self._rt_tol = rt_tol
-
-    def clusterize(self):
-        """
-        Group features by metabolite names within each sample and assign a unique cluster ID to each group.
-        Populates `self.clusters` as a dictionary of the form:
-        {sample_name: {cluster_id: Cluster object}}
-        """
-        # cluster_names = []
-        
-        # # Group features by metabolite
-        # for sample in self.features.values():
-        #     for feature in sample.values():
-        #         cluster_names += feature.metabolite
-        
-        # # cluster_names = set(cluster_names)
-
-         # Create unique clusters
-        # # # self.clusters = {}
-
-        cluster_names = []
-
-        for _, features in self.features.items():
-            for feature in features.values():
-                cluster_names += [metabolite_name for metabolite_name in feature.metabolite 
-                                  if metabolite_name not in cluster_names]
-
-        for sample in self.features.keys():
-            self.clusters[sample] = {}
-            for index, clusters in enumerate(cluster_names):
-                features = self.get_features_from_name(clusters, sample)
-
-                # Sort features by isotopologues
-                features.sort(key=lambda f: f.isotopologue)
-
-                # Assign the cluster_id to the features in the cluster
-                for feature in features:
-                    if not hasattr(feature, "in_cluster") or feature.in_cluster is None:
-                        feature.in_cluster = [] 
-                    feature.in_cluster.append(f"C{index}")  
-
-                self.clusters[sample][clusters] = Cluster(features=features, cluster_id=f"C{index}", name=clusters)
-
-    
-    def get_features_from_name(self, name, sample_name:str):
-        """
-        Retrieve all features in a given sample that are annotated with a specific metabolite name.
-        :param name: Name of the metabolite to retrieve features for
-        :param sample_name: Name of the sample to retrieve features from
-        :return: List of Feature objects that match the metabolite name in the specified sample
-        """
-        features = []
-        for feature in self.features[sample_name].values():
-            if name in feature.metabolite:
-                features.append(feature)
-        return features
-
-    def get_clusters_from_name(self, name, sample_name:str):
-        """
-        Get a cluster from the experiment by its name, in a given sample if provided
-        :param name: Name of the cluster to retrieve
-        :param sample_name: Name of the sample to retrieve the cluster from
-        :return: Cluster object if found, None otherwise
-        """
-        for cluster in self.clusters[sample_name].values():
-            if cluster.name == name:
-                return cluster
-        return None
 
     # def initialize_experimental_features(self):
     #     """
@@ -332,22 +372,3 @@ class TargetedExperiment(Experiment):
     #         df.to_csv(filename, sep="\t", index=False)
 
     #     return df
-
-# if __name__ == "__main__":
-#     from isogroup.base.io import IoHandler
-#     from isogroup.base.database import Database
-#     io= IoHandler()
-#     # data= io.read_dataset(r"..\..\data\dataset_test_XCMS.txt")
-#     # database = io.read_database(r"..\..\data\database.csv")
-#     experiment = TargetedExperiment(data, tracer="13C", mz_tol=5, rt_tol=15, database=database)
-#     experiment.initialize_experimental_features()
-#     experiment.annotate_features()
-#     print(experiment.features)
-    # experiment.clusterize()
-    # print(experiment.clusters["Sample_1"].keys())
-    # print(experiment.database.theoretical_features)
-    # experiment.annotate_features()
-    # for feature in experiment.features["Sample_2"].values():
-    #     print("after annotation",feature.feature_id, feature.metabolite, feature.rt_error, feature.mz_error)
-    # print("after annotation",experiment.features)
-    # print("after annotation",experiment.features)
