@@ -6,9 +6,8 @@ from isogroup.base.cluster import Cluster
 from isogroup.base.misc import Misc
 import logging
 import time
-from datetime import datetime
 
-logger = logging.getLogger(f"IsoGroup.{__name__}")
+logger = logging.getLogger(f"IsoGroup")
 
 
 class UntargetedExperiment(Experiment):
