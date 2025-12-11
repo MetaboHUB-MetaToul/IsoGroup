@@ -119,7 +119,7 @@ class Experiment:
                 self.features[sample][id] = feature
         
         features_count = len(next(iter(self.features.values())))
-        logger.info(f"Initialized {features_count} features for {len(self.features)} samples")
+        logger.info(f"{features_count} features loaded per sample ({len(self.features)} sample(s)).\n")
 
 # if __name__ == "__main__":
 #     # from isogroup.base.io import IoHandler
