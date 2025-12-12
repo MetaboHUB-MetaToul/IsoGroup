@@ -42,3 +42,26 @@ def test_no_cluster(dataset_df):
     untargeted_experiment.build_clusters(RTwindow=0.01, ppm_tolerance=0.01)
     assert len(untargeted_experiment.clusters["Sample_1"]) == 0
     assert len(untargeted_experiment.clusters["Sample_2"]) == 0
+
+@pytest.mark.parametrize("cluster_id, nb_features, features_id",
+                         [("C0", 2, ["F1", "F2"]),
+                          ("C1", 5, ['F9', 'F8', 'F7', 'F6', 'F5'])])
+
+def test_deduplicate_clusters(dataset_df, cluster_id, nb_features, features_id):
+    untargeted_experiment = UntargetedExperiment(dataset=dataset_df,
+                                                tracer="13C",
+                                                mz_tol=5,
+                                                rt_tol=15,
+                                                max_atoms=None)
+    untargeted_experiment.initialize_experimental_features()
+    untargeted_experiment.build_clusters(RTwindow=15, ppm_tolerance=5, max_atoms=None)
+    untargeted_experiment.deduplicate_clusters()
+    assert len(untargeted_experiment.clusters["Sample_1"]) == 2
+    assert len(untargeted_experiment.clusters["Sample_2"]) == 2
+    assert cluster_id in untargeted_experiment.clusters["Sample_1"]
+    assert cluster_id in untargeted_experiment.clusters["Sample_2"]
+    assert len(untargeted_experiment.clusters["Sample_1"][cluster_id].features) == nb_features
+    assert len(untargeted_experiment.clusters["Sample_2"][cluster_id].features) == nb_features
+    for f_id in features_id:
+        assert f_id in [f.feature_id for f in untargeted_experiment.clusters["Sample_1"][cluster_id].features]
+        assert f_id in [f.feature_id for f in untargeted_experiment.clusters["Sample_2"][cluster_id].features]
