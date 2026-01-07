@@ -42,7 +42,7 @@ class UntargetedExperiment(Experiment):
         # self.keep_richest = keep_richest
 
         self.unclustered_features: dict = {}  # {sample_name: [Feature objects]}
-
+        self.subsets_removed = None
         # --- Set up logging ---
         # self.log_file = log_file
         # logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -80,7 +80,10 @@ class UntargetedExperiment(Experiment):
         # print(" Building clusters without filtration...", end=" ", flush=True)
         # t0 = time.time()
         # logger.info(f"Built clusters with RT window: {self.rt_tol} sec, m/z tolerance: {self.mz_tol} ppm, max atoms: {self.max_atoms}")
+        logger.info("Building clusters...")
         self.build_clusters(self.rt_tol, self.mz_tol, self.max_atoms)
+        logger.info(f"  => {len(next(iter(self.clusters.values())))} clusters formed per sample.")
+
         # clusters_count = len(next(iter(self.clusters.values())))  
         # print(f" done ({clusters_count} clusters per sample)")
         # --- Deduplication and cleaning of clusters ---
@@ -93,9 +96,10 @@ class UntargetedExperiment(Experiment):
         #     f"Deduplication completed: merged clusters={merged}, removed subsets={subset_removed}, final cleaned clusters={final}, unclustered features={unclustered}"
         # )
         # print(f"Total clusters after deduplication for sample {sample} : {len(new_clusters)}\n")
-        logger.info(f"  => {len(next(iter(self.clusters.values()))) if self.clusters else 0} final clusters per sample")
-        logger.info(f"  => {len(next(iter(self.unclustered_features.values()))) if self.unclustered_features else 0} features unclustered per sample")
+        # logger.info(f"  => {len(next(iter(self.clusters.values()))) if self.clusters else 0} final clusters per sample")
+        logger.info(f"{len(next(iter(self.clusters.values())))} final isotopic clusters per sample.")
 
+        logger.info(f"{len(next(iter(self.unclustered_features.values()))) if self.unclustered_features else 0} features unclustered per sample.")    
         total_time = time.time() - start_time
         # print(f"[IsoGroup] Untargeted clustering completed in {total_time:.2f} seconds.")
         # self.logger.info(f"Pipeline completed in {total_time:.2f} seconds.")
@@ -123,8 +127,6 @@ class UntargetedExperiment(Experiment):
         #         for key, value in summary:
         #             f.write(f"{key}: {value}\n")
 
-        # TODO: Add Dataset name in summary
-        # TODO: Erase previous log file content if any
 
     def build_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int = None):
         """
@@ -139,29 +141,28 @@ class UntargetedExperiment(Experiment):
 
         if not self.features:
             raise ValueError("Features must be initialized before building clusters.")
-
+        
         # self.clusters = {}
-        logger.info("Building clusters...")
         for sample_name, features in self.features.items():
             all_features = sorted(features.values(), key=lambda f: f.rt)
-            
             rts = [f.rt for f in all_features]
-    
-            clusters = {}
-            cluster_id_local = 0
             
+            clusters = {}
+            
+            cluster_id_local = 0
+        
             # For each feature, find potential isotopologues within the RT window
             for base_feature in all_features:
-                logger.debug(f"   Feature {base_feature.feature_id} (m/z: {base_feature.mz}, rt: {base_feature.rt})")
+                # logger.debug(f" => Feature {base_feature.feature_id} (m/z: {base_feature.mz}, rt: {base_feature.rt})")
                 
                 # --- Find candidates within the RT window ---
-                logger.debug(f"      ---- Candidates within RT window ({RTwindow} sec) ----")
                 left_bound = bisect.bisect_left(rts, base_feature.rt - RTwindow)
                 right_bound = bisect.bisect_right(rts, base_feature.rt + RTwindow)
-
+                # logger.debug(f" ---- Candidates within RT window: {base_feature.rt - RTwindow} - {base_feature.rt + RTwindow} sec ----")
                 candidates = all_features[left_bound:right_bound]
+                
                 potential_group = {base_feature}
-                logger.debug(f"      {[candidate.feature_id for candidate in candidates]} \n")
+                # logger.debug(f" {[candidate.feature_id for candidate in candidates]} \n")
 
                 # --- Identification of candidates for isotopologues ---
                 for candidate in candidates:
@@ -180,8 +181,8 @@ class UntargetedExperiment(Experiment):
                     delta_ppm = abs(expected_mz - candidate.mz) / expected_mz * 1e6
 
                     if delta_ppm <= ppm_tolerance:
-                        potential_group.add(candidate)                
-                    logger.debug(f"    => Candidate {candidate.feature_id} matched as potential isotopologue M+{abs(iso_index)} (m/z: {candidate.mz}, rt: {candidate.rt}, delta ppm: {delta_ppm:.2f})")
+                        potential_group.add(candidate)         
+                    # logger.debug(f"    => Candidate {candidate.feature_id} matched as potential isotopologue M+{abs(iso_index)} (m/z: {candidate.mz}, rt: {candidate.rt}, delta ppm: {delta_ppm:.2f})")
 
                 # --- If a group of isotopologues is found, create a cluster ---
                 if len(potential_group) > 1:
@@ -194,77 +195,90 @@ class UntargetedExperiment(Experiment):
                         iso_label_tmp = "Mx" if iso_index == 0 else f"M+{iso_index}"
                 
                         f.cluster_isotopologue[cluster_id] = iso_label_tmp # Specific to clusters
-                        if cluster_id not in f.in_cluster:
-                            f.in_cluster.append(cluster_id)
-                            
+                        # if cluster_id not in f.in_cluster:
+                        #     f.in_cluster.append(cluster_id)
 
                     clusters[cluster_id] = Cluster(cluster_id=cluster_id, features=group_sorted)
                     cluster_id_local += 1
-                    logger.debug(f"        => Cluster {cluster_id} formed with features {[f.feature_id for f in group_sorted]}\n")
+
                 self.clusters[sample_name] = clusters  
+        
+        for cluster_id, cluster in clusters.items():  
+            logger.debug(f" Cluster {cluster_id} formed with {len(cluster.features)} feature(s):")
+            # feature's id and retentions times in the same line 
+            for feature in cluster.features:
+                logger.debug(f"     => Feature {feature.feature_id} : m/z={feature.mz}, rt={feature.rt}")
 
     def _keep_longest_cluster(self, cluster):
         """
         Retain only the longest cluster.
         """
-        logger.info("   Removing subset clusters (keep only longest clusters)...\n")
-
-        subsets_to_remove = []
+        self.subsets_removed = []
         signatures = {cid: set(f.feature_id for f in c.features) for cid, c in cluster.items()}
         sorted_clusters = sorted(signatures.items(), key=lambda x: len(x[1]), reverse=True)
         kept = []
         # Compare from largest to smallest cluster to identify subsets
         # If a smaller cluster is a subset of any kept larger cluster, mark it for removal
-        logger.debug("      Clusters sorted by size:")
+        # logger.debug("      Clusters sorted by size:")
         
         for cid, sig1 in sorted_clusters:
-            logger.debug(f"         Cluster {cid} : {sig1}")
-            
+            # logger.debug(f"         Cluster {cid} : {sig1}")
             is_subset = False
             for _, sig2 in kept:
                 if sig1 < sig2:
                     is_subset = True
-                    subsets_to_remove.append(f"{sig1} removed (subset of {sig2})")
+                    self.subsets_removed.append(f"{sig1} removed (subset of {sig2})")
                     del cluster[cid]
                     break
 
             if not is_subset:
                 kept.append((cid, sig1))
 
-        logger.info(f"      => {len(subsets_to_remove)} subsets removed.")
-
-        for subset in subsets_to_remove:
-            logger.debug(f"        => {subset}")
+        # logger.info(f"  => {len(self.subsets_removed)} subsets removed.")
+        
+        # for subset in self.subsets_removed:
+        #     logger.debug(f"        => {subset}")
             
 
     def _keep_closest_mz_candidate(self, cluster):
         """
         Keep only the feature closest to the expected m/z for each isotopologue in the cluster.
         """
-        logger.info("   Keeping closest m/z feature candidate for each isotopologues...\n")
+        # logger.info("   Keeping closest m/z feature candidate for each isotopologues...\n")
 
-        removed_candidates = {}
+        self.subsets_removed = {}
 
         for cluster in cluster.values():
             iso_to_candidate  = defaultdict(list)
             base_mz = cluster.lowest_mz
-            logger.debug(f"      Lowest mz in cluster {cluster.cluster_id} : {base_mz}")
-            
+            # logger.debug(f"      Lowest mz in cluster {cluster.cluster_id} : {base_mz}")
+
             for feature in cluster.features:
                 iso_index = Misc.calculate_isotopologue_index(feature.mz, base_mz, self.mzshift_tracer)
                 iso_to_candidate[iso_index].append(feature)
-                logger.debug(f"         Isotopologue {iso_index} candidates: {(feature.feature_id, f'mz: {feature.mz}')}")
+                # logger.debug(f"         Isotopologue {iso_index} candidates: {(feature.feature_id, f'mz: {feature.mz}')}")
+
+                # cluster.features = [min(candidates, key=lambda f: abs(f.mz - (base_mz + index * self.mzshift_tracer))) for index, candidates in iso_to_candidate.items()]
                 
-            for index, candidates in iso_to_candidate.items():
-                cluster.features = [min(candidates, key=lambda f: abs(f.mz - (base_mz + index * self.mzshift_tracer)))]
-                for f in candidates:
-                    if f not in cluster.features:
-                       removed_candidates[cluster.cluster_id] = {index: [f.feature_id]}
-                    else:
-                        continue
+                cluster_features = []
+                for index, candidates in iso_to_candidate.items():
+                    best_candidate = min(candidates, key=lambda f: abs(f.mz - (base_mz + index * self.mzshift_tracer)))
+                    cluster_features.append(best_candidate)
+                    # logger.debug(f"      => Keeping candidate {best_candidate.feature_id} for isotopologue {index} in cluster {cluster.cluster_id}")
+                    for f in candidates:
+                        if f not in cluster.features:
+                            self.subsets_removed[cluster.cluster_id] = {index: [f.feature_id]}
+                        else:
+                            continue    
+                cluster.features = cluster_features   
+                # for f in candidates:
+                #     if f not in cluster.features:
+                #        self.subsets_removed[cluster.cluster_id] = {index: [f.feature_id]}
+                #     else:
+                #         continue    
                     
-                    logger.debug(f"         => Removing candidate {f.feature_id} for isotopologue {index} in cluster {cluster.cluster_id}") 
-        logger.info(f"      => {len(f.feature_id)} candidate(s) removed in {len(cluster.cluster_id)} cluster(s).")
+        #             print(f"         => Removing candidate {f.feature_id} for isotopologue {index} in cluster {cluster.cluster_id}") 
+        # print(f"      => {len(f.feature_id)} candidate(s) removed in {len(cluster.cluster_id)} cluster(s).")        
         
     def deduplicate_clusters(self, keep: str=None):
         """
@@ -279,11 +293,10 @@ class UntargetedExperiment(Experiment):
                         "best_candidate" to retain only the feature with the highest intensity for each isotopologue within a cluster,
                         or "both" to apply both strategies.
         """
-
+    
         final_clusters = {}
         
-        # --- Merge identical clusters ---
-        logger.info("   Merging identical clusters...")
+        logger.info("Merging identical clusters...")
         for sample, clusters in self.clusters.items():
             merged = 0
             final_clusters[sample] = {}
@@ -296,62 +309,94 @@ class UntargetedExperiment(Experiment):
                     final_clusters[sample][cluster.cluster_id] = cluster
                 else:
                     merged += 1
-        
-        logger.info(f"      => {merged} identical clusters merged per sample.\n") 
-        
-        # --- Remove subset clusters if keep_richest is True ---
-        if keep == "longest":
-            self._keep_longest_cluster(final_clusters[sample])
-        elif keep =="closest_mz":
-            self._keep_closest_mz_candidate(final_clusters[sample])
-        elif keep == "both":
-            self._keep_longest_cluster(final_clusters[sample])
-            self._keep_closest_mz_candidate(final_clusters[sample])
-
-        # --- Assign final cluster_id, isotopologues label, in_cluster and also_in to features ---
-        new_clusters = {}
-        features_to_clusters = defaultdict(set)
-        for new_index, cluster in enumerate(final_clusters[sample].values()):
-            cluster.cluster_id = f"C{new_index}"
-            cluster.features.sort(key=lambda f: f.mz)
-            min_mz=cluster.lowest_mz
-            new_clusters[cluster.cluster_id] = cluster
             
-            for f in cluster.features:
-                features_to_clusters[f.feature_id].add(cluster.cluster_id)
-                iso_index = Misc.calculate_isotopologue_index(f.mz, min_mz, self.mzshift_tracer)
-                iso_label = "Mx" if iso_index == 0 else f"Mx+{iso_index}"
-                f.cluster_isotopologue[cluster.cluster_id] = iso_label
-                f.in_cluster = list(features_to_clusters[f.feature_id])
-                # f.also_in = [c for c in f.in_cluster if c != cluster.cluster_id]
-            
-        final_clusters[sample] = new_clusters
-        self.clusters = final_clusters
+        logger.info(f"  => {merged} identical clusters merged per sample.") 
         
+        new = {}
+        if keep:
+            logger.info(f"Deduplicating clusters based on specified strategy (keep '{keep}')...")
+        for sample, clusters in final_clusters.items():
+            new[sample] = {}
+            # --- Remove subset clusters ---
+            if keep == "longest":
+                self._keep_longest_cluster(final_clusters[sample])
+            elif keep =="closest_mz":
+                self._keep_closest_mz_candidate(final_clusters[sample])
+            elif keep == "both":
+                self._keep_longest_cluster(final_clusters[sample])
+                self._keep_closest_mz_candidate(final_clusters[sample])
+        
+        if self.subsets_removed:
+            if isinstance(self.subsets_removed, dict):
+                feature_count = 0
+                for cluster_id, removed in self.subsets_removed.items():
+                    for iso_index, features in removed.items():
+                        feature_count += len(features)
+                        logger.debug(f"  => In cluster {cluster_id}, removed candidates for isotopologue {iso_index}: {features}")
+                logger.info(f"{feature_count} candidate(s) removed in {len(self.subsets_removed)} cluster(s).")
+            else:
+                logger.info(f"  => {len(self.subsets_removed)} subsets removed per sample.")
+                logger.debug("  Removed subsets:")
+                logger.debug(self.subsets_removed)
+            
+        for sample, clusters in final_clusters.items():
+            # --- Assign final cluster_id, isotopologues label, in_cluster and also_in to features ---
+            features_to_clusters = defaultdict(set)       
+            for new_index, cluster in enumerate(final_clusters[sample].values()):
+                logger.debug(f" Cluster_id: {cluster.cluster_id}")
+                cluster.cluster_id = f"C{new_index}"
+                logger.debug(f" New assignment: {cluster.cluster_id}")
+                new[sample][cluster.cluster_id] = cluster
+                for f in cluster.features:
+                    features_to_clusters[f.feature_id].add(cluster.cluster_id)
+        
+            for cluster in final_clusters[sample].values():
+                cluster.features.sort(key=lambda f: f.mz)
+                min_mz=cluster.lowest_mz
+                for f in cluster.features:
+                    iso_index = round((f.mz - min_mz) / self.mzshift_tracer)
+                    iso_label = "Mx" if iso_index == 0 else f"Mx+{iso_index}"
+                    f.cluster_isotopologue[cluster.cluster_id] = iso_label
+                    f.in_cluster = list(features_to_clusters[f.feature_id])
+                    f.also_in[cluster.cluster_id] = [c for c in f.in_cluster if c != cluster.cluster_id]
+    
+        self.clusters = new
         # Keep unclustered features for reference
         for sample, features in self.features.items():
             self.unclustered_features[sample] = [f for f in features.values() if not f.in_cluster]
-        
-            # final = len(next(iter(self.clusters.values()))) if self.clusters else 0
-            # unclustered = sum(1 for f in next(iter(self.features.values())).values() if not f.in_cluster) if self.features else 0
-            # print(f"Final clusters for sample {sample} : {final}")
-            # print(f"Unclustered features for sample {sample} : {unclustered}\n")
-            # return merged, subset_removed, final, unclustered
-    
+        # final = len(next(iter(self.clusters.values()))) if self.clusters else 0
+        # unclustered = sum(1 for f in next(iter(self.features.values())).values() if not f.in_cluster) if self.features else 0
 
 
 # if __name__ == "__main__":
-#     from isogroup.base.io import IoHandler
-#     import pandas as pd
-#     from pathlib import Path
-#     # from isogroup.base.database import Database
-#     io = IoHandler()
-#     data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
-#     untargeted = UntargetedExperiment(dataset=data, tracer="13C", mz_tol=5, rt_tol=15, keep="both")
-#     untargeted.initialize_experimental_features()
-# # #     untargeted.run_untargeted_pipeline()
-# # #     untargeted.initialize_experimental_features()
-#     untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
+    # from isogroup.base.io import IoHandler
+    # import pandas as pd
+    # from pathlib import Path
+    # from isogroup.base.database import Database
+    # io = IoHandler()
+    # data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
+    # # data=pd.DataFrame(
+    # #     {'id': ['F1', 'F2', 'F3',  'F4',  'F5', 'F6', 'F7', 'F8', 'F9'], 
+    # #      'mz': [119.025753, 120.0291332, 191.0191775654, 119.0232843, 137.0275004, 136.024129, 135.0208168, 134.0174803, 133.0140851], 
+    # #      'rt': [667.779067, 667.9255408, 679.9930235, 678.1606593, 676.4604364, 676.5620229, 676.6045604, 676.8898827, 676.8952154], 
+    # #      'Sample_1': [1571414706.0, 1059554882.0, 31398195.78, 0.0, 529223407.9, 2090662547.0, 3105587268.0, 2077278842.0, 543216118.8], 
+    # #      'Sample_2': [266171108.6, 129533534.2, 5324316.124, 0.0, 28994270.58, 97127965.25, 154077393.8, 218743897.0, 155940888.7]}
+    # # )
+    # untargeted = UntargetedExperiment(dataset=data, tracer="13C", mz_tol=5, rt_tol=10)
+    # untargeted.initialize_experimental_features()
+    # untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
+    # untargeted.deduplicate_clusters()
+    # # print(untargeted.clusters)
+    # for sample, clusters in untargeted.clusters.items():
+    #     for cluster in clusters.values():
+    #         for f in cluster.features:
+    #             print(f"Sample {sample} Cluster {cluster.cluster_id} : {f.feature_id}{f.in_cluster, f.also_in[cluster.cluster_id]}")
+
+    # for key, value in untargeted.clusters.items():
+    #     for key2,value2 in value.items():
+    #         for f in value2.features:
+    #             print(f"Sample {key} Cluster {key2} : {f.feature_id}{f.mz, f.rt, f.in_cluster, f.also_in}")
+        
 # #     print(untargeted.clusters.keys())
 # #     # print(untargeted.clusters)
 #     untargeted.deduplicate_clusters()
