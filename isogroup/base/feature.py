@@ -49,7 +49,7 @@ class Feature:
         self.__dict__.update(extra_dims)
         self.is_adduct: tuple[bool, str] = (False, "")
         self.in_cluster = []
-        self.also_in = []
+        self.also_in = {}
 
 
     def __repr__(self) -> str:
