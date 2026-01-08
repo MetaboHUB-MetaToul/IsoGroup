@@ -1,9 +1,8 @@
+# TODO : Refactor all export methods
+
 from isogroup.base.database import Database
-
-
 import pandas as pd
 from pathlib import Path
-import logging
 
 
 
@@ -66,10 +65,9 @@ class IoHandler:
             feature_data["isotopologue"].append(', '.join(map(str, feature.isotopologue)))
             feature_data["formula"].append(feature.formula)
        
-        pd.DataFrame.from_dict(feature_data).to_csv(Path(f"{self.outputs_path}/{self.dataset_name}_isotopic_db_export.tsv"), 
+        pd.DataFrame.from_dict(feature_data).to_csv(Path(f"{self.outputs_path}/{self.dataset_name}_theoretical_db.tsv"), 
                                           sep="\t", 
                                           index=False)
-
 
     def create_output_directory(self, outputs_path):
         """
@@ -189,7 +187,7 @@ class IoHandler:
 
         # Export the DataFrame to a tsv file if a filename is provided
         # if filename:
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_annotated_clusters.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_clusters.tsv", sep="\t", index=False)
 
         # return df
     
@@ -226,7 +224,7 @@ class IoHandler:
         df.to_csv(f"{self.outputs_path}/{self.dataset_name}_summary.tsv", sep="\t", index=False)
 
         # return df
-    
+
     def untarg_export_clusters(self, cluster_to_export):
         """
         Convert the clusters into a pandas DataFrame for easier analysis and export (Untargeted case).
@@ -238,8 +236,8 @@ class IoHandler:
             for cluster in clusters.values():
                 sorted_features = sorted(cluster.features, key=lambda f: f.mz)
 
-                for idx, f in enumerate(sorted_features):
-                    iso_label = f.cluster_isotopologue.get(cluster.cluster_id, "Mx")
+                for _, f in enumerate(sorted_features):
+                    # iso_label = f.cluster_isotopologue.get(cluster.cluster_id, "Mx")
                     records.append({
                         "ClusterID": cluster.cluster_id,
                         "FeatureID": f.feature_id,
@@ -247,9 +245,9 @@ class IoHandler:
                         "m/z": f.mz,
                         "sample": f.sample,
                         "Intensity": f.intensity,
-                        "Isotopologue": iso_label,
-                        "InClusters": f.in_cluster,
-                        "AlsoIn": f.also_in
+                        "Isotopologue": f.cluster_isotopologue[cluster.cluster_id],
+                        # "InClusters": f.in_cluster,
+                        "AlsoIn": f.also_in[cluster.cluster_id]
                     })
 
         df = pd.DataFrame.from_records(records)
