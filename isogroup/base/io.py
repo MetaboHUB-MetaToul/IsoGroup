@@ -115,33 +115,6 @@ class IoHandler:
 
         # return df
 
-    
-    def untarg_export_features(self, features_to_export):
-        """
-        Export all features to a TSV file (Untargeted case).
-        
-        """
-        records = []
-        for _, features in features_to_export.items():
-            for f in features.values():
-                # If not in any cluster, mark accordingly
-                cluster_ids = f.in_cluster if f.in_cluster else ["None"]
-                iso_labels = [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
-
-                records.append({
-                    "FeatureID": f.feature_id,
-                    "RT": f.rt,
-                    "m/z": f.mz,
-                    "sample": f.sample,
-                    "Intensity": f.intensity,
-                    "InClusters": cluster_ids,
-                    "Isotopologues": iso_labels
-                })
-
-        df = pd.DataFrame.from_records(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_untargeted_features.tsv", sep="\t", index=False)
-
-    
     def targ_export_clusters(self, features, clusters_to_export, sample_name = None):
         """
         Summarize annotated clusters into a DataFrame and export it to a tsv file.
@@ -225,6 +198,31 @@ class IoHandler:
 
         # return df
 
+    def untarg_export_features(self, features_to_export):
+        """
+        Export all features to a TSV file (Untargeted case).
+        
+        """
+        records = []
+        for _, features in features_to_export.items():
+            for f in features.values():
+                # If not in any cluster, mark accordingly
+                cluster_ids = f.in_cluster if f.in_cluster else ["None"]
+                # iso_labels = [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
+
+                records.append({
+                    "FeatureID": f.feature_id,
+                    "RT": f.rt,
+                    "m/z": f.mz,
+                    "sample": f.sample,
+                    "Intensity": f.intensity,
+                    "InClusters": cluster_ids,
+                    "Isotopologues": [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
+                })
+
+        df = pd.DataFrame(records)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_untargeted_features.tsv", sep="\t", index=False)
+
     def untarg_export_clusters(self, cluster_to_export):
         """
         Convert the clusters into a pandas DataFrame for easier analysis and export (Untargeted case).
@@ -250,7 +248,7 @@ class IoHandler:
                         "AlsoIn": f.also_in[cluster.cluster_id]
                     })
 
-        df = pd.DataFrame.from_records(records)
+        df = pd.DataFrame(records)
         df.to_csv(f"{self.outputs_path}/{self.dataset_name}_untargeted_clusters.tsv", sep="\t", index=False)
         # return pd.DataFrame.from_records(records)
 
