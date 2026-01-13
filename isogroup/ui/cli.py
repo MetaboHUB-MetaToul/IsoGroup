@@ -120,17 +120,17 @@ def build_parser_targeted():
         description='Annotation of isotopic datasets',
     )
 
-    parser.add_argument("inputdata", help="measurements file to process")
+    parser.add_argument("inputdata", help="input dataset file")
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
-    parser.add_argument("-D", type=str, required=True,
+    parser.add_argument("-D", "--database", type=str, required=True,
                         help="path to database file (csv)")
-    parser.add_argument("--mztol", type=float, required=True,
-                        help='mz tolerance in ppm (e.g. "5")')
-    parser.add_argument("--rttol", type=float, required=True,
-                        help='rt tolerance (e.g. "10")')
+    parser.add_argument("-ppm", "--ppm_tol", type=float, required=True,
+                        help='m/z tolerance in ppm (e.g. "5")')
+    parser.add_argument("-rt", "--rttol", type=float, required=True,
+                        help='retention time tolerance in sec (e.g. "10")')
     parser.add_argument("-o", "--output", type=str, required=True,
-                        help='output file for the clusters')
+                        help='path to generate the output files')
     parser.add_argument("-v", "--verbose",
                         help='enable verbose logging', action="store_true")
     parser.set_defaults(func=targeted_process)
@@ -141,23 +141,23 @@ def build_parser_untargeted():
         prog='isogroup_untargeted',
         description='Clustering of isotopic datasets',
     )
-    parser.add_argument("inputdata", help="measurements file to process")
+    parser.add_argument("inputdata", help="input dataset file")
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
-    parser.add_argument("--ppm_tol", type=float, required=True,
-                        help='mz tolerance in ppm for clustering (e.g. "5")')
-    parser.add_argument("--rt_window", type=float, required=True,
-                        help='rt tolerance for clustering (e.g. "10")')
+    parser.add_argument("-ppm", "--ppm_tol", type=float, required=True,
+                        help='m/z tolerance in ppm for clustering (e.g. "5")')
+    parser.add_argument("rt","--rt_tol", type=float, required=True,
+                        help='rt tolerance in sec for clustering (e.g. "10")')
     parser.add_argument("--max_atoms", type=int, default=None,
-                        help='maximum number of tracer atoms in a molecule (e.g. "20"), optional')
+                        help='maximum number of tracer atoms in a molecule (e.g. "20"). OPTIONAL')
     # parser.add_argument("--kbc", type=bool, default=False,
     #                     help='keep only the best candidate among overlapping clusters during clustering (default: False)')
     # parser.add_argument("--kr", type=bool, default=True,
     #                     help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
     parser.add_argument("--keep", type=str, default=None,
-                        help='strategy to deduplicate overlapping clusters')
-    parser.add_argument("-o", "--output", type=str,
-                        help='output file for the clusters')
+                        help='strategy to deduplicate overlapping clusters: "longest", "closest_mz", "both" (default: None). OPTIONAL')
+    parser.add_argument("-o", "--output", type=str, required=True,
+                        help='path to generate the output files')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help='enable verbose logging')
     parser.set_defaults(func=untargeted_process)
