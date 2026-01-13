@@ -64,7 +64,7 @@ Here after the available options with their full names are enumerated and detail
 
 .. argparse::
    :module: isogroup.ui.cli
-   :func: parseArgs
+   :func: build_parser_untargeted
    :prog: isogroup_untargeted
    :nodescription:
 
@@ -78,7 +78,7 @@ Here after the available options with their full names are enumerated and detail
 
 .. argparse::
    :module: isogroup.ui.cli
-   :func: parseArgs
+   :func: build_parser_targeted
    :prog: isogroup_targeted
    :nodescription:
 
