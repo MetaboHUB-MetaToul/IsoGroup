@@ -146,7 +146,7 @@ def build_parser_untargeted():
                         help='the isotopic tracer (e.g. "13C")')
     parser.add_argument("-ppm", "--ppm_tol", type=float, required=True,
                         help='m/z tolerance in ppm for clustering (e.g. "5")')
-    parser.add_argument("rt","--rt_tol", type=float, required=True,
+    parser.add_argument("-rt","--rt_tol", type=float, required=True,
                         help='rt tolerance in sec for clustering (e.g. "10")')
     parser.add_argument("--max_atoms", type=int, default=None,
                         help='maximum number of tracer atoms in a molecule (e.g. "20"). OPTIONAL')
