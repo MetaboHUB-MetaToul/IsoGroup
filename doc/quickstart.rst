@@ -60,18 +60,26 @@ You can now use **two separate command-line executables** depending on your need
 
   isogroup_untargeted [command line options]
 
+Here after the available options with their full names are enumerated and detailed.
+
+.. argparse::
+   :module: isogroup.ui.cli
+   :func: parseArgs
+   :prog: isogroup_untargeted
+   :nodescription:
+
 - **Targeted annotation using a database**:
 
 .. code-block:: bash
 
-  isogroup_targeted [command line options]
+  isogroup_targeted [command line options ]
 
 Here after the available options with their full names are enumerated and detailed.
 
 .. argparse::
    :module: isogroup.ui.cli
    :func: parseArgs
-   :prog: isogroup
+   :prog: isogroup_targeted
    :nodescription:
 
 
