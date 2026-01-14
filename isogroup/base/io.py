@@ -65,7 +65,7 @@ class IoHandler:
             feature_data["isotopologue"].append(', '.join(map(str, feature.isotopologue)))
             feature_data["formula"].append(feature.formula)
        
-        pd.DataFrame.from_dict(feature_data).to_csv(Path(f"{self.outputs_path}/{self.dataset_name}_theoretical_db.tsv"), 
+        pd.DataFrame.from_dict(feature_data).to_csv(Path(f"{self.outputs_path}/{self.dataset_name}.theoretical_db.tsv"), 
                                           sep="\t", 
                                           index=False)
 
@@ -105,12 +105,12 @@ class IoHandler:
 
         # Create a DataFrame to summarize the annotated data
         df = pd.DataFrame(feature_data)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_features.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
 
         # Export the Dataframe of only one sample if a sample name is provided
         if sample_name:
             df = df[df["sample"] == sample_name] # Filter the DataFrame by sample name
-            df.to_csv(f"{self.outputs_path}/{self.dataset_name}_features.tsv", sep="\t", index=False)
+            df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
         
 
         # return df
@@ -160,7 +160,7 @@ class IoHandler:
 
         # Export the DataFrame to a tsv file if a filename is provided
         # if filename:
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_clusters.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.clusters.tsv", sep="\t", index=False)
 
         # return df
     
@@ -194,7 +194,7 @@ class IoHandler:
 
         # Export the DataFrame to a tsv file if a filename is provided
         # if filename:
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_summary.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.summary.tsv", sep="\t", index=False)
 
         # return df
 
@@ -221,7 +221,7 @@ class IoHandler:
                 })
 
         df = pd.DataFrame(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_features.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
 
     def untarg_export_clusters(self, cluster_to_export):
         """
@@ -249,7 +249,7 @@ class IoHandler:
                     })
 
         df = pd.DataFrame(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_clusters.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.clusters.tsv", sep="\t", index=False)
         # return pd.DataFrame.from_records(records)
 
 
