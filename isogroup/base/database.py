@@ -93,10 +93,10 @@ class Database:
 
     #         return df
 
-if __name__ == "__main__":
-    from isogroup.base.io import IoHandler
-    io= IoHandler()
-    database_df= io.read_database(r"..\..\data\database.csv")
-    test_db = Database(dataset=database_df, tracer="13C", tracer_element="C")
-    test_db.initialize_theoretical_features()
-    print(test_db.theoretical_features)
+# if __name__ == "__main__":
+#     from isogroup.base.io import IoHandler
+#     io= IoHandler()
+#     database_df= io.read_database(r"..\..\data\database.csv")
+#     test_db = Database(dataset=database_df, tracer="13C", tracer_element="C")
+#     test_db.initialize_theoretical_features()
+#     print(test_db.theoretical_features)
