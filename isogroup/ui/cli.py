@@ -46,20 +46,20 @@ def targeted_process(args):
     _logger.info(f"Using IsoGroup targeted version: {isogroup.__version__}")    
     _logger.info("=============================================\n")
     _logger.info(f"Dataset loaded from {args.inputdata}")
-    database = io.read_database(Path(args.D))
-    _logger.info(f"Database loaded from {args.D}\n")
+    database = io.read_database(Path(args.database))
+    _logger.info(f"Database loaded from {args.database}\n")
 
     targeted_experiment= TargetedExperiment(
         dataset=dataset,
         tracer=args.tracer,
-        mz_tol=args.mztol,
-        rt_tol=args.rttol,
+        mz_tol=args.ppm_tol,
+        rt_tol=args.rt_tol,
         database=database)
     
     _logger.info("-------- Parameters --------")
     _logger.info(f"  Tracer : {args.tracer}")
-    _logger.info(f"  m/z tolerance (ppm) : {args.mztol}")
-    _logger.info(f"  RT tolerance (sec) : {args.rttol}")
+    _logger.info(f"  m/z tolerance (ppm) : {args.ppm_tol}")
+    _logger.info(f"  RT tolerance (sec) : {args.rt_tol}")
     _logger.info("----------------------------\n")
 
     io.export_theoretical_database(targeted_experiment.database)
@@ -127,7 +127,7 @@ def build_parser_targeted():
                         help="path to database file (csv)")
     parser.add_argument("-ppm", "--ppm_tol", type=float, required=True,
                         help='m/z tolerance in ppm (e.g. "5")')
-    parser.add_argument("-rt", "--rttol", type=float, required=True,
+    parser.add_argument("-rt", "--rt_tol", type=float, required=True,
                         help='retention time tolerance in sec (e.g. "10")')
     parser.add_argument("-o", "--output", type=str, required=True,
                         help='path to generate the output files')
