@@ -185,7 +185,7 @@ class IoHandler:
 
                     # Retrieve the samples in which the cluster is present
                     samples_in_cluster = {sample for sample, clusters in clusters_to_summarize.items() if cluster.cluster_id in [c.cluster_summary["cluster_id"] for c in clusters.values()]}
-                    summary["samples"] = len(samples_in_cluster)
+                    summary["number_of_samples"] = len(samples_in_cluster)
 
                     cluster_summary.append(summary)
 
