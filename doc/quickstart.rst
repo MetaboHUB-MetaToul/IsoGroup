@@ -7,7 +7,7 @@ Quick start
 Installation
 ------------------------------------------------
 
-IsoGroup requires Python 3.5 or higher. If you do not have a Python environment
+IsoGroup requires Python 3.7 or higher. If you do not have a Python environment
 configured on your computer, we recommend that you follow the instructions
 from `Anaconda <https://www.anaconda.com/download/>`_.
 
@@ -85,7 +85,7 @@ Here after the available options with their full names are enumerated and detail
 
 IsoGroup automatically carries out either untargeted isotopic clustering or targeted annotation of mass features
 
-.. warning:: The annotation and clustering options must be carefully selected to ensure reliable interpretations of labeling data, as detailed in the :ref:`Tutorials`.
+.. warning:: The annotation and clustering options must be carefully selected to ensure reliable interpretations of labeling data, as detailed in the Tutorials.
 
 .. seealso:: Tutorial :ref:`First time using IsoGroup` has example data that you can use to test your installation.
 
@@ -96,8 +96,8 @@ Library
 IsoGroup is also available as a library (a Python module) that you can import directly in your Python
 scripts:
 
-code-block:: python
+.. code-block:: python
 
-import isogroup
+  import isogroup
 
 .. .. seealso::  Have a look at our :ref:`library showcase <Library documentation>` if you are interested into this experimental feature.
