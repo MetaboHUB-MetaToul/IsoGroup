@@ -89,7 +89,7 @@ def untargeted_process(args):
     _logger.info("-------- Parameters --------")
     _logger.info(f"  Tracer : {args.tracer}")
     _logger.info(f"  m/z tolerance (ppm) : {args.ppm_tol}")
-    _logger.info(f"  RT tolerance (sec) : {args.rt_window}")
+    _logger.info(f"  RT tolerance (sec) : {args.rt_tol}")
     _logger.info(f"  Max atoms : {args.max_atoms}")
     _logger.info("----------------------------\n")
 
@@ -97,7 +97,7 @@ def untargeted_process(args):
         dataset=dataset,
         tracer=args.tracer,
         mz_tol=args.ppm_tol,
-        rt_tol=args.rt_window,
+        rt_tol=args.rt_tol,
         max_atoms=args.max_atoms,
         keep=args.keep)
     
@@ -154,7 +154,7 @@ def build_parser_untargeted():
     #                     help='keep only the best candidate among overlapping clusters during clustering (default: False)')
     # parser.add_argument("--kr", type=bool, default=True,
     #                     help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
-    parser.add_argument("--keep", type=str, default=None,
+    parser.add_argument("-k","--keep", type=str, default=None,
                         help='strategy to deduplicate overlapping clusters: "longest", "closest_mz", "both" (default: None). OPTIONAL')
     parser.add_argument("-o", "--output", type=str, required=True,
                         help='path to generate the output files')
