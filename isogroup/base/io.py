@@ -221,7 +221,7 @@ class IoHandler:
                 })
 
         df = pd.DataFrame(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_untargeted_features.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_features.tsv", sep="\t", index=False)
 
     def untarg_export_clusters(self, cluster_to_export):
         """
@@ -249,7 +249,7 @@ class IoHandler:
                     })
 
         df = pd.DataFrame(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_untargeted_clusters.tsv", sep="\t", index=False)
+        df.to_csv(f"{self.outputs_path}/{self.dataset_name}_clusters.tsv", sep="\t", index=False)
         # return pd.DataFrame.from_records(records)
 
 
