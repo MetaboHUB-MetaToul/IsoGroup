@@ -74,10 +74,10 @@ IsoGroup provides flexible options to adapt to various experimental conditions, 
 :Measurements file: Path to the :ref:`Measurements file`.
 :Database file: Path to the :ref:`Database file` containing the elemental formulas of metabolites.
 :Isotopic tracer: The tracer used for your experiment.
-:m/z tolerance: The mass accuracy allowed for the annotation of isotopic clusters, in ppm (parts per million).
+:ppm tolerance: The mass accuracy allowed for the annotation of isotopic clusters, in ppm (parts per million).
 :rt tolerance: The retention time tolerance for the annotation of isotopic clusters compared to the theoretical retention time of the metabolite, in seconds.
 :Output data path: Path to the :ref:`Output data`. A log file with the same name will be created in the same directory, with a ‘.log’ extension.
-:Verbose logs: If set, the log-file will contain all information necessary to check intermediate results of the annotation process.
+:Verbose logs: If set, the console and the log-file will contain all information necessary to check intermediate results of the annotation process.
 
 
 ..  _`Output data`:
