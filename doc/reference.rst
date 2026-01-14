@@ -1,6 +1,32 @@
 Reference
 ********************************************************************************
 
+:file:`experiment.py`
+-----------------------
+
+.. automodule:: isogroup.base.experiment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+:file:`targeted_experiment.py`
+-----------------------
+
+.. automodule:: isogroup.base.targeted_experiment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+:file:`untargeted_experiment.py`
+-----------------------
+
+.. automodule:: isogroup.base.untargeted_experiment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 :file:`feature.py`
 -----------------------
 
@@ -27,16 +53,6 @@ Reference
    :undoc-members:
    :show-inheritance:
    
-
-:file:`targeted_experiment.py`
------------------------
-
-.. automodule:: isogroup.base.targeted_experiment
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 :file:`misc.py`
 -----------------------
 
@@ -45,11 +61,10 @@ Reference
    :undoc-members:
    :show-inheritance:
 
-
-:file:`untargeted_experiment.py`
+:file:`io.py`
 -----------------------
 
-.. automodule:: isogroup.base.untargeted_experiment
+.. automodule:: isogroup.base.io
    :members:
    :undoc-members:
    :show-inheritance:
