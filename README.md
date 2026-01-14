@@ -12,7 +12,7 @@ IsoGroup supports two complementary modes of data processing:
 * In **targeted** mode, IsoGroup performs **annotation** of isotopic clusters based on a user-provided database of compounds.
   Mass features (m/z, retention time, intensity) are matched to known metabolites and isotopologues according to their exact mass and retention time.
   A database of isotopologues specific to the selected tracer is generated and used for the annotation.
-* In **untargeted** mode, IsoGroup performs **clustering** by grouping MS features identified as :ref:`isotopologues <isotopologues>` into :ref:`isotopic clusters <isotopic clusters>` **without prior knowledge**, based solely on the characteristic mass differences induced by the tracer element.
+* In **untargeted** mode, IsoGroup performs **clustering** by grouping MS features identified as isotopologues into isotopic clusters **without prior knowledge**, based solely on the characteristic mass differences induced by the tracer element.
 
 
 The output of IsoGroup is a list of isotopic clusters with their m/z, retention time, intensity, and isotopologues. 
@@ -22,13 +22,22 @@ The code is open-source, and available under a GPLv3 license.
 Detailed documentation can be found online at Read the Docs ([https://isogroup.readthedocs.io/](https://isogroup.readthedocs.io/)).
 Check out the [Tutorials](https://isogroup.readthedocs.io/en/latest/tutorials.html) !
 
-## Key features
+<!-- ## Key features
 * group MS features into **isotopic clusters**
 * generate a database with isotopologues for a given tracer element,
 * **annotate** isotopic clusters,
 * calculate **exact mass and retention time errors** for annotated clusters,
 * can be used with any tracer element,
-* open-source, free and easy to install everywhere where Python 3 and pip run,
+* open-source, free and easy to install everywhere where Python 3 and pip run, -->
+
+* Group MS features into **isotopic clusters** without prior knowledge (untargeted mode),
+* Use in-house databases for **targeted annotation** of isotopic clusters,
+* Generate a database with isotopologues for a given tracer element,
+* Calculate **exact mass and retention time errors** for annotated clusters,
+* Compatible with any tracer element,
+* Handle multiple sample types (unlabeled, fully labeled, Pascal Triangle, etc)
+* Open-source, free and easy to install everywhere where Python 3 and pip run.
+
 
 ## Quick-start
 IsoGroup requires Python 3.7 or higher and run on all platforms.
