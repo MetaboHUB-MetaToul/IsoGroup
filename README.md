@@ -31,7 +31,7 @@ Check out the [Tutorials](https://isogroup.readthedocs.io/en/latest/tutorials.ht
 * open-source, free and easy to install everywhere where Python 3 and pip run,
 
 ## Quick-start
-IsoGroup requires Python 3.5 or higher and run on all platforms.
+IsoGroup requires Python 3.7 or higher and run on all platforms.
 Please check [the documentation](https://isogroup.readthedocs.io/en/latest/quickstart.html) for complete
 installation and usage instructions.
 
@@ -81,7 +81,7 @@ in the command above. You will need a recent latex installation.
 
 
 ## Authors
-Butin Noémie, Loïc Le Grégam, Pierre Millard, Rochelle Kouakou
+Noémie Butin, Loïc Le Grégam, Pierre Millard, Rochelle Kouakou
 
 ## Contact
-:email: Pierre Millard, millard@insa-toulouse.fr, Noémie Butin, butin@insa-toulouse.fr, kouakou@insa-toulouse.fr
+:email: noemie.butin@univ-perp.fr, loic.legregam@unige.ch, millard@insa-toulouse.fr, kouakou@insa-toulouse.fr
