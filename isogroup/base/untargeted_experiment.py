@@ -189,14 +189,14 @@ class UntargetedExperiment(Experiment):
                     cluster_id = f"C{cluster_id_local}"
                     group_sorted = sorted(list(potential_group), key=lambda f: f.mz)
                 
-                    for f in group_sorted:
-                        # iso_index = round((f.mz - group_sorted[0].mz) / self.mzshift_tracer) 
-                        iso_index = Misc.calculate_isotopologue_index(f.mz, group_sorted[0].mz, self.mzshift_tracer) # Theoretical isotopologue index
-                        iso_label_tmp = "Mx" if iso_index == 0 else f"M+{iso_index}"
+                    # for f in group_sorted:
+                    #     # iso_index = round((f.mz - group_sorted[0].mz) / self.mzshift_tracer) 
+                    #     iso_index = Misc.calculate_isotopologue_index(f.mz, group_sorted[0].mz, self.mzshift_tracer) # Theoretical isotopologue index
+                    #     iso_label_tmp = "Mx" if iso_index == 0 else f"M+{iso_index}"
                 
-                        f.cluster_isotopologue[cluster_id] = iso_label_tmp # Specific to clusters
-                        # if cluster_id not in f.in_cluster:
-                        #     f.in_cluster.append(cluster_id)
+                    #     f.cluster_isotopologue[cluster_id] = iso_label_tmp # Specific to clusters
+                    #     # if cluster_id not in f.in_cluster:
+                    #     #     f.in_cluster.append(cluster_id)
 
                     clusters[cluster_id] = Cluster(cluster_id=cluster_id, features=group_sorted)
                     cluster_id_local += 1
@@ -354,7 +354,7 @@ class UntargetedExperiment(Experiment):
                 cluster.features.sort(key=lambda f: f.mz)
                 min_mz=cluster.lowest_mz
                 for f in cluster.features:
-                    iso_index = round((f.mz - min_mz) / self.mzshift_tracer)
+                    iso_index = Misc.calculate_isotopologue_index(f.mz, min_mz, self.mzshift_tracer)
                     iso_label = "Mx" if iso_index == 0 else f"Mx+{iso_index}"
                     f.cluster_isotopologue[cluster.cluster_id] = iso_label
                     f.in_cluster = list(features_to_clusters[f.feature_id])
