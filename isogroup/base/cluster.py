@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import List, Union, Iterator
+import numpy as np
+from typing import List, Iterator
 from isogroup.base.feature import Feature
 
 class Cluster:
@@ -72,7 +73,30 @@ class Cluster:
         :return: float
         """
         return max([f.mz for f in self.features])
-
+    
+    @property
+    def length(self) -> int:
+        """
+        Returns the number of features in the cluster
+        """
+        return len(self.features)
+    
+    @property
+    def mean_rt(self) -> float:
+        """
+        Returns the mean retention time (RT) of the features in the cluster
+        :return: float
+        """
+        return np.mean([f.rt for f in self.features])
+    
+    @property
+    def mean_mz(self) -> float:
+        """
+        Returns the mean mass-to-charge ratio (m/z) of the features in the cluster
+        :return: float
+        """
+        return np.mean([f.mz for f in self.features])
+    
     @property
     def metabolite(self):
         """
