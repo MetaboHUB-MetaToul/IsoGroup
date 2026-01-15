@@ -205,26 +205,28 @@ class Cluster:
 
 
     @property 
-    def status(self):
+    def status(self) -> str:
         """
         Returns the status of the cluster based on its completeness, incompleteness, and duplication.
         :return: str
         """
+        status = []
+
         if self.is_complete:
-            return "Ok"
+            status.append("Complete")
         
-        if self.is_incomplete and self.is_duplicated:
-            return "Incomplete, duplicated isotopologues"
+        # if self.is_incomplete and self.is_duplicated:
+        #     return "Incomplete, duplicated isotopologues"
 
         if self.is_incomplete:
-            return "Incomplete"
+            status.append("Incomplete")
 
         if self.is_duplicated:
-            return "Duplicated isotopologues"
+            status.append("Duplicated isotopologues")
         
         # if self.is_corrupted:
         #     return "Corrupted"
-        
+        return str(", ".join(status))
 
     @property
     def missing_isotopologues(self) -> List[int]:
