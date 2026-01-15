@@ -44,8 +44,9 @@ class Feature:
         self.mz_error = mz_error if mz_error is not None else []
         self.rt_error = rt_error if rt_error is not None else []
         self.metabolite = [i.label for i in self.chemical] if self.chemical is not None else metabolite #metabolite ou [] ?
-        self.isotopologue = isotopologue if isotopologue is not None else [] # Targeted version
-        self.cluster_isotopologue = isotopologue if isotopologue is not None else {} # Test 10/09 for Untargeted, dict, iso associated to the cluster -> check impact on Targeted version
+        # self.isotopologue = isotopologue if isotopologue is not None else [] # Targeted version
+        # self.cluster_isotopologue = isotopologue if isotopologue is not None else {} # Test 10/09 for Untargeted, dict, iso associated to the cluster -> check impact on Targeted version
+        self.cluster_isotopologue = {}
         self.__dict__.update(extra_dims)
         self.is_adduct: tuple[bool, str] = (False, "")
         self.in_cluster = []
@@ -57,7 +58,7 @@ class Feature:
         Return a string representation of the feature.
         :return: str
         """
-        return (f"Feature(ID = {self.feature_id}, RT={self.rt}, Metabolite={self.metabolite}, Isotopologue={self.isotopologue}, "
+        return (f"Feature(ID = {self.feature_id}, RT={self.rt}, Metabolite={self.metabolite}, Isotopologue={self.cluster_isotopologue}, "
                 f"mz={self.mz}, "
                 f"intensity={self.intensity})")
     

@@ -73,13 +73,14 @@ class TargetedExperiment(Experiment):
                     # Check if the experimental feature is within tolerance
                     if abs(mz_error) <= self.mz_tol and abs(rt_error) <= self.rt_tol:
                         feature.chemical.append(db_feature.chemical[0])
-                        feature.isotopologue.append(db_feature.isotopologue[0])
+                        # feature.isotopologue.append(db_feature.isotopologue[0])
+                        feature.cluster_isotopologue[db_feature.chemical[0].label] = db_feature.cluster_isotopologue[db_feature.chemical[0].label]
                         feature.metabolite.append(db_feature.chemical[0].label)
                         feature.formula.append(db_feature.chemical[0].formula)
                         feature.mz_error.append(mz_error)
                         feature.rt_error.append(rt_error)
                         nb_features_annotated += 1
-                        logger.debug(f"Feature {feature.feature_id} in sample {feature.sample} annotated with {db_feature.chemical[0].label} (isotopologue: {db_feature.isotopologue[0]})")
+                        logger.debug(f"Feature {feature.feature_id} in sample {feature.sample} annotated with {db_feature.chemical[0].label} (isotopologue: {db_feature.cluster_isotopologue[db_feature.chemical[0].label]})")
                         logger.debug(f" - mz error (ppm): {mz_error}, rt error (sec): {rt_error}")
         
         logger.info(f"    => {nb_features_annotated} experimental features matched with database features.\n")
@@ -117,7 +118,8 @@ class TargetedExperiment(Experiment):
                 features = self.get_features_from_name(clusters, sample)
                 
                 # Sort features by isotopologues
-                features.sort(key=lambda f: f.isotopologue)
+                # features.sort(key=lambda f: f.isotopologue)
+                features.sort(key=lambda f: f.cluster_isotopologue[clusters])
                 # Assign the cluster_id to the features in the cluster
                 for feature in features:
                     if not hasattr(feature, "in_cluster") or feature.in_cluster is None:

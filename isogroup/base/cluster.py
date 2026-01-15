@@ -136,8 +136,9 @@ class Cluster:
         isotopologues = []
         for feature in self.features:
             if self.name in feature.metabolite:
-                idx = feature.metabolite.index(self.name)
-                isotopologues.append(feature.isotopologue[idx])
+                isotopologues.append(feature.cluster_isotopologue[self.name])
+                # idx = feature.metabolite.index(self.name)
+                # isotopologues.append(feature.isotopologue[idx])
         return isotopologues
 
 

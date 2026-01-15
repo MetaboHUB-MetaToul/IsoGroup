@@ -44,6 +44,15 @@ class IoHandler:
         
         return pd.read_csv(self.database_path, sep=";")
     
+    def create_output_directory(self, outputs_path):
+        """
+        Create an output directory for saving results.
+        """
+        res_dir = Path(f"{outputs_path}/{self.dataset_name}_res")
+        res_dir.mkdir(parents=True, exist_ok=True)
+        self.outputs_path = res_dir
+        
+        # logging.info(f"Results will be saved to: {self.outputs_path}")
 
     def export_theoretical_database(self, database: Database):
         """
@@ -62,24 +71,16 @@ class IoHandler:
             feature_data["mz"].append(feature.mz)
             feature_data["rt"].append(feature.rt)
             feature_data["metabolite"].append(', '.join(feature.metabolite))
-            feature_data["isotopologue"].append(', '.join(map(str, feature.isotopologue)))
+            # feature_data["isotopologue"].append(', '.join(map(str, feature.isotopologue)))
+            for metabolite in feature.metabolite:
+                feature_data["isotopologue"].append(feature.cluster_isotopologue[metabolite])
             feature_data["formula"].append(feature.formula)
        
         pd.DataFrame.from_dict(feature_data).to_csv(Path(f"{self.outputs_path}/{self.dataset_name}.theoretical_db.tsv"), 
                                           sep="\t", 
                                           index=False)
 
-    def create_output_directory(self, outputs_path):
-        """
-        Create an output directory for saving results.
-        """
-        res_dir = Path(f"{outputs_path}/{self.dataset_name}_res")
-        res_dir.mkdir(parents=True, exist_ok=True)
-        self.outputs_path = res_dir
-        
-        # logging.info(f"Results will be saved to: {self.outputs_path}")
 
-   
     def targ_export_features(self, features_to_export, sample_name = None):
         """
         Summarize and export annotated features into a DataFrame and export it to a tsv file.
@@ -96,7 +97,8 @@ class IoHandler:
                     "mz": feature.mz,
                     "rt": feature.rt,
                     "metabolite": feature.metabolite,
-                    "isotopologue": feature.isotopologue,
+                    # "isotopologue": feature.isotopologue,
+                    "isotopologue": [feature.cluster_isotopologue[met] for met in feature.metabolite],
                     "mz_error": feature.mz_error,
                     "rt_error": feature.rt_error,
                     "sample": feature.sample,
@@ -143,7 +145,8 @@ class IoHandler:
                             "mz": feature.mz,
                             "rt": feature.rt,
                             "feature_potential_metabolite": feature.metabolite,
-                            "isotopologue": feature.isotopologue[idx],
+                            # "isotopologue": feature.isotopologue[idx],
+                            "isotopologue": feature.cluster_isotopologue[cluster.name],
                             "mz_error": feature.mz_error[idx],
                             "rt_error": feature.rt_error[idx],
                             "sample": feature.sample,
@@ -181,10 +184,10 @@ class IoHandler:
                 if cluster.cluster_id not in cluster_id_unique:
                     cluster_id_unique.add(cluster.cluster_id)
 
-                    summary = cluster.cluster_summary
+                    summary = cluster.summary
 
                     # Retrieve the samples in which the cluster is present
-                    samples_in_cluster = {sample for sample, clusters in clusters_to_summarize.items() if cluster.cluster_id in [c.cluster_summary["cluster_id"] for c in clusters.values()]}
+                    samples_in_cluster = {sample for sample, clusters in clusters_to_summarize.items() if cluster.cluster_id in [c.summary["ClusterID"] for c in clusters.values()]}
                     summary["number_of_samples"] = len(samples_in_cluster)
 
                     cluster_summary.append(summary)

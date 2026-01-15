@@ -60,7 +60,8 @@ class Database:
                     tracer=self.tracer,
                     intensity=None,
                     chemical=[chemical],
-                    isotopologue=[isotopologue],
+                    # isotopologue=[isotopologue],
+                    cluster_isotopologue={chemical.label: isotopologue},
                     metabolite=[chemical.label],
                     formula = line["formula"],
                 )
@@ -95,8 +96,13 @@ class Database:
 
 # if __name__ == "__main__":
 #     from isogroup.base.io import IoHandler
+#     from pathlib import Path
 #     io= IoHandler()
-#     database_df= io.read_database(r"..\..\data\database.csv")
+#     database_df= io.read_database(Path(r"..\..\data\database.csv"))
 #     test_db = Database(dataset=database_df, tracer="13C", tracer_element="C")
 #     test_db.initialize_theoretical_features()
-#     print(test_db.theoretical_features)
+#     for feature in test_db.theoretical_features:
+#         print(feature.metabolite)
+#         print(feature.cluster_isotopologue)
+        
+    
