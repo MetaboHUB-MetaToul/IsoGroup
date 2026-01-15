@@ -154,8 +154,8 @@ def build_parser_untargeted():
     #                     help='keep only the best candidate among overlapping clusters during clustering (default: False)')
     # parser.add_argument("--kr", type=bool, default=True,
     #                     help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
-    parser.add_argument("-k","--keep", type=str, default=None,
-                        help='strategy to deduplicate overlapping clusters: "longest", "closest_mz", "both" (default: None). OPTIONAL')
+    parser.add_argument("-k","--keep", type=str, default="All",
+                        help='strategy to deduplicate overlapping clusters: "longest", "closest_mz", "both", "All". OPTIONAL')
     parser.add_argument("-o", "--output", type=str, required=True,
                         help='path to generate the output files')
     parser.add_argument("-v", "--verbose", action="store_true",
