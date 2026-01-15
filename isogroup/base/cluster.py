@@ -254,19 +254,19 @@ class Cluster:
         pass
 
     @property
-    def cluster_summary(self):
+    def summary(self):
         """
         Returns a summary of the cluster
         :return: dict
         """
         return {
-            "cluster_id": self.cluster_id,
-            "name": self.name,
-            "number_of_features": len(self),
-            "isotopologues": self.isotopologues,
-            "status": self.status,
-            "missing_isotopologues": self.missing_isotopologues,
-            "duplicated_isotopologues": self.duplicated_isotopologues
+            "ClusterID": self.cluster_id,
+            "Name": self.name,
+            "Number_of_features": len(self),
+            "Isotopologues": self.isotopologues,
+            "Status": self.status,
+            "Missing_isotopologues": self.missing_isotopologues,
+            "Duplicated_isotopologues": self.duplicated_isotopologues
         }
     
 
