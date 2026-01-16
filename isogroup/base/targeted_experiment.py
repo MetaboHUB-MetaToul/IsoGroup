@@ -49,7 +49,7 @@ class TargetedExperiment(Experiment):
 
         total_time = time.time() - start_time
 
-        logger.info(f"Targeted clustering completed in {total_time:.2f} seconds.")
+        logger.info(f"Targeted grouping completed in {total_time:.2f} seconds.")
 
     def annotate_features(self):
         """
@@ -103,7 +103,7 @@ class TargetedExperiment(Experiment):
 
          # Create unique clusters
         # # # self.clusters = {}
-        logger.info("Clustering features by metabolite names...")
+        logger.info("Grouping features by metabolite names...")
         
         cluster_names = []
 
@@ -127,10 +127,10 @@ class TargetedExperiment(Experiment):
                     feature.in_cluster.append(f"C{index}")  
 
                 self.clusters[sample][clusters] = Cluster(features=features, cluster_id=f"C{index}", name=clusters)
-                logger.debug(f"Cluster C{index} ({clusters}) created with {len(features)} features in sample {sample}.")
+                logger.debug(f"Cluster C{index} ({clusters}) identified with {len(features)} features in sample {sample}.")
                 logger.debug(f"    {[features.feature_id for features in features]} ")
         
-        logger.info(f"    => {len(cluster_names)} clusters created.\n")
+        logger.info(f"    => {len(cluster_names)} clusters identified.\n")
     
     def get_features_from_name(self, name, sample_name:str):
         """

@@ -42,12 +42,18 @@ def targeted_process(args):
     io.create_output_directory(Path(args.output))
 
     _logger = _build_logger(args, io.outputs_path)
-    _logger.info("=============================================")
-    _logger.info(f"Using IsoGroup targeted version: {isogroup.__version__}")    
-    _logger.info("=============================================\n")
-    _logger.info(f"Dataset loaded from {args.inputdata}")
+    # _logger.info("=============================================")
+    # _logger.info(f"Using IsoGroup targeted version: {isogroup.__version__}")    
+    # _logger.info("=============================================\n")
+    # _logger.info(f"Dataset loaded from {args.inputdata}")
+    _logger.info("====================")
+    _logger.info("Grouping process")
+    _logger.info("====================\n")
+    _logger.info(f"  Mode = Targeted")
+    _logger.info(f"  Version = {isogroup.__version__}")
+    _logger.info(f"  Data file = {args.inputdata}")
     database = io.read_database(Path(args.database))
-    _logger.info(f"Database loaded from {args.database}\n")
+    _logger.info(f"  Database = {args.database}")
 
     targeted_experiment= TargetedExperiment(
         dataset=dataset,
@@ -56,11 +62,10 @@ def targeted_process(args):
         rt_tol=args.rt_tol,
         database=database)
     
-    _logger.info("-------- Parameters --------")
-    _logger.info(f"  Tracer : {args.tracer}")
-    _logger.info(f"  m/z tolerance (ppm) : {args.ppm_tol}")
-    _logger.info(f"  RT tolerance (sec) : {args.rt_tol}")
-    _logger.info("----------------------------\n")
+    _logger.info(f"  Tracer = {args.tracer}")
+    _logger.info(f"  ppm tolerance (ppm) = {args.ppm_tol}")
+    _logger.info(f"  RT tolerance (sec) = {args.rt_tol}\n")
+
 
     io.export_theoretical_database(targeted_experiment.database)
 
@@ -69,7 +74,7 @@ def targeted_process(args):
     io.targ_export_features(targeted_experiment.features)
     io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
     io.clusters_summary(targeted_experiment.clusters)
-    _logger.info(f"Path to results files: {io.outputs_path}")
+    _logger.info(f"Path to results files = {io.outputs_path}")
 
 # ---------------------
 # Untargeted processing
@@ -81,17 +86,16 @@ def untargeted_process(args):
     io.create_output_directory(Path(args.output))
 
     _logger=_build_logger(args, io.outputs_path)
-    _logger.info("=============================================")
-    _logger.info(f"Using IsoGroup untargeted version: {isogroup.__version__}")    
-    _logger.info("=============================================\n")
-    _logger.info(f"Dataset loaded from {args.inputdata}\n")
-
-    _logger.info("-------- Parameters --------")
-    _logger.info(f"  Tracer : {args.tracer}")
-    _logger.info(f"  m/z tolerance (ppm) : {args.ppm_tol}")
-    _logger.info(f"  RT tolerance (sec) : {args.rt_tol}")
-    _logger.info(f"  Max atoms : {args.max_atoms}")
-    _logger.info("----------------------------\n")
+    # _logger.info("=============================================")
+    # _logger.info(f"Using IsoGroup untargeted version: {isogroup.__version__}")    
+    # _logger.info("=============================================\n")
+    # _logger.info(f"Dataset loaded from {args.inputdata}\n")
+    _logger.info("====================")
+    _logger.info("Grouping process")
+    _logger.info("====================\n")
+    _logger.info(f"  Mode = Untargeted")
+    _logger.info(f"  Version = {isogroup.__version__}")
+    _logger.info(f"  Data file = {args.inputdata}")
 
     untargeted_experiment= UntargetedExperiment(
         dataset=dataset,
@@ -101,6 +105,11 @@ def untargeted_process(args):
         max_atoms=args.max_atoms,
         keep=args.keep)
     
+    _logger.info(f"  Tracer = {args.tracer}")
+    _logger.info(f"  ppm tolerance (ppm) = {args.ppm_tol}")
+    _logger.info(f"  RT tolerance (sec) = {args.rt_tol}")
+    _logger.info(f"  Max atoms = {args.max_atoms}\n")
+
     # untargeted_experiment.build_final_clusters(
     #     verbose=args.verbose,
     #     keep_best_candidate=args.kbc,
@@ -109,7 +118,7 @@ def untargeted_process(args):
     
     io.untarg_export_features(untargeted_experiment.features)
     io.untarg_export_clusters(untargeted_experiment.clusters)
-    _logger.info(f"Path to results files: {io.outputs_path}")
+    _logger.info(f"Path to results files = {io.outputs_path}")
 
 # -------------------
 # CLI setup

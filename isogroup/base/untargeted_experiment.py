@@ -82,7 +82,7 @@ class UntargetedExperiment(Experiment):
         # logger.info(f"Built clusters with RT window: {self.rt_tol} sec, m/z tolerance: {self.mz_tol} ppm, max atoms: {self.max_atoms}")
         logger.info("Building clusters...")
         self.build_clusters(self.rt_tol, self.mz_tol, self.max_atoms)
-        logger.info(f"  => {len(next(iter(self.clusters.values())))} clusters formed per sample.")
+        logger.info(f"  => {len(next(iter(self.clusters.values())))} clusters formed per sample.\n")
 
         # clusters_count = len(next(iter(self.clusters.values())))  
         # print(f" done ({clusters_count} clusters per sample)")
@@ -97,14 +97,14 @@ class UntargetedExperiment(Experiment):
         # )
         # print(f"Total clusters after deduplication for sample {sample} : {len(new_clusters)}\n")
         # logger.info(f"  => {len(next(iter(self.clusters.values()))) if self.clusters else 0} final clusters per sample")
-        logger.info(f"{len(next(iter(self.clusters.values())))} final isotopic clusters per sample.")
+        logger.info(f"{len(next(iter(self.clusters.values())))} isotopic clusters identified per sample.")
 
-        logger.info(f"{len(next(iter(self.unclustered_features.values()))) if self.unclustered_features else 0} features unclustered per sample.")    
+        logger.info(f"{len(next(iter(self.unclustered_features.values()))) if self.unclustered_features else 0} unassigned features per sample.")    
         total_time = time.time() - start_time
         # print(f"[IsoGroup] Untargeted clustering completed in {total_time:.2f} seconds.")
         # self.logger.info(f"Pipeline completed in {total_time:.2f} seconds.")
 
-        logger.info(f"Untargeted clustering completed in {total_time:.2f} seconds.")
+        logger.info(f"Untargeted grouping completed in {total_time:.2f} seconds.")
 
         # --- Verbose logging to file ---
         # if verbose:
@@ -140,7 +140,9 @@ class UntargetedExperiment(Experiment):
         # self._ppm_tolerance = ppm_tolerance
 
         if not self.features:
+            logger.error("Features must be initialized before building clusters.")
             raise ValueError("Features must be initialized before building clusters.")
+            
         
         # self.clusters = {}
         for sample_name, features in self.features.items():
@@ -296,7 +298,7 @@ class UntargetedExperiment(Experiment):
     
         final_clusters = {}
         
-        logger.info("Merging identical clusters...")
+        logger.info("Merging clusters...")
         for sample, clusters in self.clusters.items():
             merged = 0
             final_clusters[sample] = {}
@@ -310,7 +312,7 @@ class UntargetedExperiment(Experiment):
                 else:
                     merged += 1
             
-        logger.info(f"  => {merged} identical clusters merged per sample.") 
+        logger.info(f"  => {merged} clusters deleted (merged) per sample.\n") 
         
         new = {}
         if keep:
@@ -333,9 +335,9 @@ class UntargetedExperiment(Experiment):
                     for iso_index, features in removed.items():
                         feature_count += len(features)
                         logger.debug(f"  => In cluster {cluster_id}, removed candidates for isotopologue {iso_index}: {features}")
-                logger.info(f"{feature_count} candidate(s) removed in {len(self.subsets_removed)} cluster(s).")
+                logger.info(f"  => {feature_count} candidate(s) removed in {len(self.subsets_removed)} cluster(s).\n")
             else:
-                logger.info(f"  => {len(self.subsets_removed)} subsets removed per sample.")
+                logger.info(f"  => {len(self.subsets_removed)} subsets removed per sample.\n")
                 logger.debug("  Removed subsets:")
                 logger.debug(self.subsets_removed)
             
@@ -345,7 +347,7 @@ class UntargetedExperiment(Experiment):
             for new_index, cluster in enumerate(final_clusters[sample].values()):
                 logger.debug(f" Cluster_id: {cluster.cluster_id}")
                 cluster.cluster_id = f"C{new_index}"
-                logger.debug(f" New assignment: {cluster.cluster_id}")
+                logger.debug(f" New index assigned: {cluster.cluster_id}")
                 new[sample][cluster.cluster_id] = cluster
                 for f in cluster.features:
                     features_to_clusters[f.feature_id].add(cluster.cluster_id)
