@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'IsoGroup'
-copyright = u'{}, Noémie Butin, Loïc Le Grégam, Pierre Millard'.format(datetime.date.today().year)
+copyright = u'{}, Noémie Butin, Loïc Le Grégam, Pierre Millard, Rochelle Kouakou'.format(datetime.date.today().year)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

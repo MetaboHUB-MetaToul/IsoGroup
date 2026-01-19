@@ -50,23 +50,9 @@ Usage
 Command Line Interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-IsoGroup can be executed from the command line interface (CLI) to perform either **untargeted isotopic clustering** or **targeted annotation**.
+IsoGroup can be executed from the command line interface (CLI) to perform either **untargeted isotopic grouping** or **targeted annotation**.
 
 You can now use **two separate command-line executables** depending on your needs:
-
-- **Untargeted isotopic clustering**:
-
-.. code-block:: bash
-
-  isogroup_untargeted [command line options]
-
-Here after the available options with their full names are enumerated and detailed.
-
-.. argparse::
-   :module: isogroup.ui.cli
-   :func: build_parser_untargeted
-   :prog: isogroup_untargeted
-   :nodescription:
 
 - **Targeted annotation using a database**:
 
@@ -83,11 +69,26 @@ Here after the available options with their full names are enumerated and detail
    :nodescription:
 
 
-IsoGroup automatically carries out either untargeted isotopic clustering or targeted annotation of mass features
+IsoGroup automatically carries out either untargeted isotopic grouping or targeted annotation of mass features
 
-.. warning:: The annotation and clustering options must be carefully selected to ensure reliable interpretations of labeling data, as detailed in the Tutorials.
+.. warning:: The annotation and grouping options must be carefully selected to ensure reliable interpretations of labeling data, as detailed in the Tutorials.
 
-.. seealso:: Tutorial :ref:`First time using IsoGroup` has example data that you can use to test your installation.
+- **Untargeted isotopic grouping**:
+
+.. code-block:: bash
+
+  isogroup_untargeted [command line options]
+
+Here after the available options with their full names are enumerated and detailed.
+
+.. argparse::
+   :module: isogroup.ui.cli
+   :func: build_parser_untargeted
+   :prog: isogroup_untargeted
+   :nodescription:
+
+
+.. seealso:: Tutorials has example data that you can use to test your installation.
 
 
 Library

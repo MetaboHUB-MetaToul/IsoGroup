@@ -171,3 +171,9 @@ Log file (``.log``)
 
 Extensive information on the annotation process can be found in the log file if ‘Verbose logs’ option has been checked.
 
+
+Warning and error messages
+--------------------------------------------------------------------------------
+
+Error messages are explicit. You should examine carefully any warning/error message.
+After correcting the problem, you might have to restart IsoGroup and re-run the analysis.

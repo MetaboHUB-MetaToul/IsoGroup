@@ -41,24 +41,24 @@ The measurement file is a TXT file with one row by feature and the following col
 
 :download:`Example file <../data/dataset_test_XCMS.txt>`.
 
-..  _`Clustering parameters`:
+..  _`Grouping parameters`:
 
 ********************************************************************************
-Clustering parameters
+Grouping parameters
 ********************************************************************************
 
 IsoGroup provides flexible options to adapt to various experimental conditions, such as isotopic tracer, mass accuracy, or data processing quality
 
 :Measurements file: Path to the :ref:`Measurements file (untargeted)`.
 :Isotopic tracer: The tracer used for your experiment.
-:ppm tolerance: The mass accuracy allowed for the clustering of isotopologues into isotopic clusters, in ppm (parts per million).
-:rt tolerance: The retention time tolerance for the clustering of isotopologues into isotopic clusters, in seconds.
+:ppm tolerance: The mass accuracy allowed for the grouping of isotopologues into isotopic clusters, in ppm (parts per million).
+:rt tolerance: The retention time tolerance for the grouping of isotopologues into isotopic clusters, in seconds.
 :Verbose: If set, the console and the log-file will contain all information necessary to check intermediate results of the annotation process.
 
 Additional optional parameters
 ----------------------------------------------------------------------------------
 
-IsoGroup also provides additional optional parameters to refine the clustering of isotopologues into isotopic clusters:
+IsoGroup also provides additional optional parameters to refine the grouping of isotopologues into isotopic clusters:
 
 :Max atoms: The maximum number of tracer atoms expected for any molecule in your dataset. Restricting this parameter reduces the search space and thus the computation time. 
             By default, IsoGroup automatically estimates the maximum number of isotopologues based on the feature m/z and tracer element.
@@ -117,3 +117,8 @@ Log file (``.log``)
 
 Extensive information on the annotation process can be found in the log file if ‘Verbose logs’ option has been checked.
 
+Warning and error messages
+--------------------------------------------------------------------------------
+
+Error messages are explicit. You should examine carefully any warning/error message.
+After correcting the problem, you might have to restart IsoGroup and re-run the analysis.
