@@ -8,20 +8,21 @@ logger = logging.getLogger(f"IsoGroup")
 class Experiment:
     """
     Represents a mass spectrometry experiment with experimental features.
-
-    Args:
-        dataset (pd.DataFrame): DataFrame containing experimental data with columns for m/z, retention time (RT), feature ID, and sample intensities.
-        tracer (str): Tracer code used in the experiment (e.g. "13C").
-        mz_tol (float) : m/z tolerance (in ppm).
-        rt_tol(float) : Retention time tolerance (in sec).
-        max_atoms (int|None):  Maximum number of tracer atoms to consider for isotopologues.
-        database (None): DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
+        
     """
-    def __init__(self, dataset : pd.DataFrame, tracer, mz_tol, rt_tol, max_atoms=None, database=None): 
+    def __init__(self, dataset : pd.DataFrame, tracer:str, ppm_tol:float, rt_tol:float, max_atoms:int=None, database:pd.DataFrame=None): 
+        """
+        :param dataset: DataFrame containing experimental data with columns for m/z, retention time (RT), feature ID, and sample intensities.
+        :param tracer: Tracer code used in the experiment (e.g. "13C").
+        :param ppm_tol: m/z tolerance (in ppm).
+        :param rt_tol: Retention time tolerance (in sec).
+        :param max_atoms: Maximum number of tracer atoms to consider for isotopologues. If None, IsoGroup automatically estimates the maximum number of isotopologues based on the feature m/z and tracer element. 
+        :param database: DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
+        """
         self.dataset = dataset 
         self._tracer = tracer
         self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
-        self._mz_tol = mz_tol
+        self._ppm_tol = ppm_tol
         self._rt_tol = rt_tol
         self.max_atoms = max_atoms
         self.database = database
@@ -29,15 +30,17 @@ class Experiment:
         self.clusters = {} # {sample_name: {cluster_id: Cluster object}}
         
     @property
-    def rt_tol(self):
+    def rt_tol(self) -> float:
         """
-        Returns the retention time tolerance used for feature annotation.
-        :return: float        
+        Returns the retention time tolerance used for feature annotation.      
         """
         return self._rt_tol
     
     @rt_tol.setter
-    def rt_tol(self, value):
+    def rt_tol(self, value) -> float:
+        """
+        Sets the retention time tolerance used for feature annotation.
+        """
         if not isinstance(value, (float)):
             raise ValueError("RT tolerance must be a number.")
         if self._rt_tol is None:
@@ -45,43 +48,42 @@ class Experiment:
         self._rt_tol = value
 
     @property
-    def tracer(self):
+    def tracer(self) -> str:
         """
         Returns the tracer used for the experiment.
-        :return: str 
         """
         return self._tracer
 
     @property
-    def mz_tol(self):
+    def ppm_tol(self) -> float:
         """
-        Returns the m/z tolerance used for feature annotation.
-        :return: float 
+        Returns the m/z tolerance (in ppm) used for feature annotation.
         """
-        return self._mz_tol
+        return self._ppm_tol
     
-    @mz_tol.setter
-    def mz_tol(self, value):
+    @ppm_tol.setter
+    def ppm_tol(self, value):
+        """
+        Sets the m/z tolerance (in ppm) used for feature annotation.
+        """
         if not isinstance(value, (float)):
             raise ValueError("mz tolerance must be a number.")
-        if self._mz_tol is None:
+        if self._ppm_tol is None:
             raise ValueError("mz tolerance must be provided.") 
-        self._mz_tol = value
+        self._ppm_tol = value
         
 
     @property
-    def tracer_element(self):
+    def tracer_element(self) -> str:
         """
         Returns the tracer element used in the experiment.
-        :return: str 
         """
         return self._tracer_element
     
     @property
-    def tracer_idx(self):
+    def tracer_idx(self) -> int:
         """
         Returns the tracer index used in the experiment.
-        :return: int 
         """
         return self._tracer_idx
 
@@ -89,9 +91,6 @@ class Experiment:
         """
         Initialize Feature objects from the dataset and organize them by sample.
         Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
-
-        :param dataset: DataFrame containing experimental data with columns for m/z, retention time (RT), 
-                        feature ID, and sample intensities.
         """
         dataset = self.dataset.set_index(["mz", "rt", "id"])
         

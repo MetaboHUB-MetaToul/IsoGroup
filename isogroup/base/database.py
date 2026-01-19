@@ -18,11 +18,11 @@ class Database:
         :param tracer_element:  Tracer element (e.g. "C") used.
         """
         self.dataset = dataset
-        self.theoretical_features: list = []
-        self.tracer: str = tracer
+        self.theoretical_features = []
+        self.tracer = tracer
         self._tracer_element = tracer_element
         # self._tracer_element, self._tracer_idx = Misc._parse_strtracer(tracer)
-        self.clusters: list = []
+        self.clusters = []
 
         _isodata: dict = LabelledChemical.DEFAULT_ISODATA
         self._delta_mz_tracer: float = _isodata[self._tracer_element]["mass"][1] - _isodata[

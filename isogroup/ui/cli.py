@@ -10,8 +10,8 @@ def _build_logger(args, output_path):
     """
     Build the logger object
     
-    Args:
-        args: command line arguments
+    :param args: arguments from the CLI
+    :param output_path: path to the output directory
     """
     _logger = logging.getLogger("IsoGroup")
     log_file = logging.FileHandler(f"{output_path}/log.txt", mode='w')
@@ -35,6 +35,9 @@ def _build_logger(args, output_path):
 # -------------------
 
 def targeted_process(args):
+    """
+    Processing function for targeted mode.
+    """
     
     # load data file
     io = IoHandler()
@@ -81,6 +84,9 @@ def targeted_process(args):
 # ---------------------
 
 def untargeted_process(args):
+    """
+    Processing function for untargeted mode.
+    """
     io= IoHandler()
     dataset = io.read_dataset(Path(args.inputdata))
     io.create_output_directory(Path(args.output))
@@ -164,7 +170,7 @@ def build_parser_untargeted():
     # parser.add_argument("--kr", type=bool, default=True,
     #                     help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
     parser.add_argument("-k","--keep", type=str, default="All",
-                        help='strategy to deduplicate overlapping clusters: "longest", "closest_mz", "both", "All". OPTIONAL')
+                        help='strategy to deduplicate overlapping clusters: "longest", "closest_mz", "both", "all". OPTIONAL')
     parser.add_argument("-o", "--output", type=str, required=True,
                         help='path to generate the output files')
     parser.add_argument("-v", "--verbose", action="store_true",

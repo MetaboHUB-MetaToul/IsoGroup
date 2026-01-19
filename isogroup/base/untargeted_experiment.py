@@ -6,6 +6,7 @@ from isogroup.base.cluster import Cluster
 from isogroup.base.misc import Misc
 import logging
 import time
+import pandas as pd
 
 logger = logging.getLogger(f"IsoGroup")
 
@@ -13,20 +14,22 @@ logger = logging.getLogger(f"IsoGroup")
 class UntargetedExperiment(Experiment):
     """
     Represents an untargeted mass spectrometry experiment.
-    An untargeted experiment contains a collection of features and clusters, along with associated metadata.
+    An untargeted experiment involves grouping features into potential isotopologue clusters based on retention time proximity and m/z differences.
 
     """
 
-    def __init__(self, dataset, tracer:str, mz_tol:float, rt_tol:float, max_atoms:int = None, keep:str=None) : #  keep_best_candidate: bool = False, #  keep_richest: bool = False,
+    def __init__(self, dataset:pd.DataFrame, tracer:str, ppm_tol:float, rt_tol:float, max_atoms:int = None, keep:str=None) : #  keep_best_candidate: bool = False, #  keep_richest: bool = False,
         """
+        :param dataset: DataFrame containing experimental data with columns for m/z, retention time (RT), feature ID and sample intensities.
         :param tracer: Tracer code used in the experiment (e.g. "13C").
-        :param mz_tol: m/z tolerance in ppm.
+        :param ppm_tol: m/z tolerance in ppm.
         :param rt_tol: Retention time tolerance in seconds.
-        :param max_atoms: Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
+        :param max_atoms: Maximum number of tracer atoms to consider for isotopologues. If None, IsoGroup automatically estimates the maximum number of isotopologues based on the feature m/z and tracer element.
+        :param keep: Strategy to keep clusters during deduplication. Options are "longest", "closest_mz", "both". By default, "all" (all clusters are kept).
         """
 
-        super().__init__(dataset= dataset, tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, max_atoms=max_atoms)
-
+        super().__init__(dataset= dataset, tracer=tracer, ppm_tol=ppm_tol, rt_tol=rt_tol, max_atoms=max_atoms)
+        self.mode = "untargeted"
         # self.dataset = dataset
         # self.features = features
         # self.log_file = log_file
@@ -37,12 +40,12 @@ class UntargetedExperiment(Experiment):
         # self.ppm_tolerance = ppm_tolerance
         # self.max_atoms = max_atoms
         self.mzshift_tracer = float(Misc.calculate_mzshift(self.tracer)) 
-        self.keep = keep
+        self.keep = keep # Keep strategy: "longest", "closest_mz", "both". By default, "All" (all clusters are kept).
         # self.keep_best_candidate = keep_best_candidate
         # self.keep_richest = keep_richest
 
-        self.unclustered_features: dict = {}  # {sample_name: [Feature objects]}
-        self.subsets_removed = None
+        self.unclustered_features = {}  # {sample_name: [Feature objects]}
+        self.subsets_removed = None 
         # --- Set up logging ---
         # self.log_file = log_file
         # logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -53,12 +56,6 @@ class UntargetedExperiment(Experiment):
     def run_untargeted_pipeline(self):
         """
         Complete pipeline to build and deduplicate clusters from the dataset with logging and timing.
-        Parameters:
-            RTwindow (float): Retention time window for clustering.
-            ppm_tolerance (float): m/z tolerance in parts per million for clustering.
-            max_atoms (int|None): Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
-            keep_best_candidate (bool): If True, retain only the feature with the highest intensity for each isotopologue within a cluster.
-            keep_richest (bool): If True, retain only the largest cluster when multiple clusters share features.
         """
         start_time = time.time()
         # start_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -81,7 +78,7 @@ class UntargetedExperiment(Experiment):
         # t0 = time.time()
         # logger.info(f"Built clusters with RT window: {self.rt_tol} sec, m/z tolerance: {self.mz_tol} ppm, max atoms: {self.max_atoms}")
         logger.info("Building clusters...")
-        self.build_clusters(self.rt_tol, self.mz_tol, self.max_atoms)
+        self.build_clusters(self.rt_tol, self.ppm_tol, self.max_atoms)
         logger.info(f"  => {len(next(iter(self.clusters.values())))} clusters formed per sample.\n")
 
         # clusters_count = len(next(iter(self.clusters.values())))  
@@ -128,16 +125,16 @@ class UntargetedExperiment(Experiment):
         #             f.write(f"{key}: {value}\n")
 
 
-    def build_clusters(self, RTwindow: float, ppm_tolerance: float, max_atoms: int = None):
+    def build_clusters(self, rt_tol: float, ppm_tol: float, max_atoms: int = None):
         """
         Group features into potential isotopologue clusters based on retention time proximity and m/z differences.
-        Parameters:
-            RTwindow (float): Retention time window for clustering.
-            ppm_tolerance (float): m/z tolerance in parts per million for clustering.
-            max_atoms (int|None): Maximum number of tracer atoms to consider for isotopologues. If None, it will be determined based on m/z.
+        :param rt_tol: Retention time window for clustering.
+        :param ppm_tol: m/z tolerance in parts per million for clustering.
+        :param max_atoms: Maximum number of tracer atoms to consider for isotopologues. If None, IsoGroup automatically estimates 
+                        the maximum number of isotopologues based on the feature m/z and tracer element.
         """
-        # self._RTwindow = RTwindow
-        # self._ppm_tolerance = ppm_tolerance
+        # self._rt_tol = rt_tol
+        # self._ppm_tol = ppm_tol
 
         if not self.features:
             logger.error("Features must be initialized before building clusters.")
@@ -158,9 +155,9 @@ class UntargetedExperiment(Experiment):
                 # logger.debug(f" => Feature {base_feature.feature_id} (m/z: {base_feature.mz}, rt: {base_feature.rt})")
                 
                 # --- Find candidates within the RT window ---
-                left_bound = bisect.bisect_left(rts, base_feature.rt - RTwindow)
-                right_bound = bisect.bisect_right(rts, base_feature.rt + RTwindow)
-                # logger.debug(f" ---- Candidates within RT window: {base_feature.rt - RTwindow} - {base_feature.rt + RTwindow} sec ----")
+                left_bound = bisect.bisect_left(rts, base_feature.rt - rt_tol)
+                right_bound = bisect.bisect_right(rts, base_feature.rt + rt_tol)
+                # logger.debug(f" ---- Candidates within RT window: {base_feature.rt - rt_tol} - {base_feature.rt + rt_tol} sec ----")
                 candidates = all_features[left_bound:right_bound]
                 
                 potential_group = {base_feature}
@@ -182,7 +179,7 @@ class UntargetedExperiment(Experiment):
                     expected_mz = base_feature.mz + iso_index * self.mzshift_tracer
                     delta_ppm = abs(expected_mz - candidate.mz) / expected_mz * 1e6
 
-                    if delta_ppm <= ppm_tolerance:
+                    if delta_ppm <= ppm_tol:
                         potential_group.add(candidate)         
                     # logger.debug(f"    => Candidate {candidate.feature_id} matched as potential isotopologue M+{abs(iso_index)} (m/z: {candidate.mz}, rt: {candidate.rt}, delta ppm: {delta_ppm:.2f})")
 
@@ -211,9 +208,11 @@ class UntargetedExperiment(Experiment):
             for feature in cluster.features:
                 logger.debug(f"     => Feature {feature.feature_id} : m/z={feature.mz}, rt={feature.rt}")
 
-    def _keep_longest_cluster(self, cluster):
+    def _keep_longest_cluster(self, cluster:dict):
         """
         Retain only the longest cluster.
+
+        :param cluster: cluster dictionary to process.
         """
         self.subsets_removed = []
         signatures = {cid: set(f.feature_id for f in c.features) for cid, c in cluster.items()}
@@ -242,9 +241,11 @@ class UntargetedExperiment(Experiment):
         #     logger.debug(f"        => {subset}")
             
 
-    def _keep_closest_mz_candidate(self, cluster):
+    def _keep_closest_mz_candidate(self, cluster:dict):
         """
         Keep only the feature closest to the expected m/z for each isotopologue in the cluster.
+
+        :param cluster: cluster dictionary to process.
         """
         # logger.info("   Keeping closest m/z feature candidate for each isotopologues...\n")
 
@@ -282,18 +283,17 @@ class UntargetedExperiment(Experiment):
         #             print(f"         => Removing candidate {f.feature_id} for isotopologue {index} in cluster {cluster.cluster_id}") 
         # print(f"      => {len(f.feature_id)} candidate(s) removed in {len(cluster.cluster_id)} cluster(s).")        
         
-    def deduplicate_clusters(self, keep: str=None):
+    def deduplicate_clusters(self, keep:str):
         """
         Clean up and deduplicate clusters by :
         - Merging clusters with identical feature compositions.
         - Removing clusters that are subsets of larger clusters (if keep is "longest").
-        - Keeping only the best candidate feature for each isotopologue (if keep is "best_candidate").
+        - Keeping only the best candidate feature for each isotopologue (if keep is "closest_mz").
         - Updating each feature's cluster memberships, isotopologue numbers, and also_in lists.
 
-        Parameters:
-            keep (str): Strategy for deduplication. Options are "longest" to keep the largest cluster,
-                        "best_candidate" to retain only the feature with the highest intensity for each isotopologue within a cluster,
-                        or "both" to apply both strategies.
+        :param keep: Strategy for deduplication. Options are "longest" to keep the largest cluster,
+                        "closest_mz" to retain only the feature with the highest intensity for each isotopologue within a cluster,
+                        or "both" to apply both strategies. By default, all clusters are kept ("all").
         """
     
         final_clusters = {}
@@ -371,26 +371,30 @@ class UntargetedExperiment(Experiment):
 
 
 # if __name__ == "__main__":
-    # from isogroup.base.io import IoHandler
-    # import pandas as pd
-    # from pathlib import Path
-    # from isogroup.base.database import Database
-    # io = IoHandler()
-    # data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
-    # # data=pd.DataFrame(
-    # #     {'id': ['F1', 'F2', 'F3',  'F4',  'F5', 'F6', 'F7', 'F8', 'F9'], 
-    # #      'mz': [119.025753, 120.0291332, 191.0191775654, 119.0232843, 137.0275004, 136.024129, 135.0208168, 134.0174803, 133.0140851], 
-    # #      'rt': [667.779067, 667.9255408, 679.9930235, 678.1606593, 676.4604364, 676.5620229, 676.6045604, 676.8898827, 676.8952154], 
-    # #      'Sample_1': [1571414706.0, 1059554882.0, 31398195.78, 0.0, 529223407.9, 2090662547.0, 3105587268.0, 2077278842.0, 543216118.8], 
-    # #      'Sample_2': [266171108.6, 129533534.2, 5324316.124, 0.0, 28994270.58, 97127965.25, 154077393.8, 218743897.0, 155940888.7]}
-    # # )
-    # untargeted = UntargetedExperiment(dataset=data, tracer="13C", mz_tol=5, rt_tol=10)
-    # untargeted.initialize_experimental_features()
-    # untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
-    # untargeted.deduplicate_clusters()
-    # # print(untargeted.clusters)
-    # for sample, clusters in untargeted.clusters.items():
-    #     for cluster in clusters.values():
+#     from isogroup.base.io import IoHandler
+#     import pandas as pd
+#     from pathlib import Path
+#     from isogroup.base.database import Database
+#     io = IoHandler()
+#     data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
+#     # data=pd.DataFrame(
+#     #     {'id': ['F1', 'F2', 'F3',  'F4',  'F5', 'F6', 'F7', 'F8', 'F9'], 
+#     #      'mz': [119.025753, 120.0291332, 191.0191775654, 119.0232843, 137.0275004, 136.024129, 135.0208168, 134.0174803, 133.0140851], 
+#     #      'rt': [667.779067, 667.9255408, 679.9930235, 678.1606593, 676.4604364, 676.5620229, 676.6045604, 676.8898827, 676.8952154], 
+#     #      'Sample_1': [1571414706.0, 1059554882.0, 31398195.78, 0.0, 529223407.9, 2090662547.0, 3105587268.0, 2077278842.0, 543216118.8], 
+#     #      'Sample_2': [266171108.6, 129533534.2, 5324316.124, 0.0, 28994270.58, 97127965.25, 154077393.8, 218743897.0, 155940888.7]}
+#     # )
+#     untargeted = UntargetedExperiment(dataset=data, tracer="13C", mz_tol=5, rt_tol=10)
+#     untargeted.run_untargeted_pipeline()
+    
+#     # untargeted.initialize_experimental_features()
+#     # untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
+#     # untargeted.deduplicate_clusters()
+#     # # print(untargeted.clusters)
+#     for sample, clusters in untargeted.clusters.items():
+#         for cluster in clusters.values():
+#             print(cluster.isotopologues)
+#             # print(cluster.__len__())
     #         for f in cluster.features:
     #             print(f"Sample {sample} Cluster {cluster.cluster_id} : {f.feature_id}{f.in_cluster, f.also_in[cluster.cluster_id]}")
 

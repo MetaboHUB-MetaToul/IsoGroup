@@ -5,7 +5,6 @@ import pandas as pd
 from pathlib import Path
 
 
-
 class IoHandler:
     """
     Handles input and output operations.
@@ -13,14 +12,16 @@ class IoHandler:
     """
 
     def __init__(self):
-        self.dataset_path = None
-        self.dataset_name = None
-        self.database_path = None
-        self.outputs_path = None
+        self.dataset_path:Path = None
+        self.dataset_name:str = None
+        self.database_path:Path = None
+        self.outputs_path:Path = None
 
     def read_dataset(self, dataset):
         """
         Reads the dataset from the specified file path and loads it into a pandas DataFrame.
+
+        :param dataset: Path to the dataset file.
         """
         self.dataset_path = dataset
 
@@ -36,6 +37,8 @@ class IoHandler:
     def read_database(self, database):
         """
         Reads the database from the specified file path and loads it into a pandas DataFrame.
+
+        :param database: Path to the database file.
         """
         self.database_path = database
 
@@ -47,6 +50,8 @@ class IoHandler:
     def create_output_directory(self, outputs_path):
         """
         Create an output directory for saving results.
+
+        :param outputs_path: Path to the output directory.
         """
         res_dir = Path(f"{outputs_path}/{self.dataset_name}_res")
         res_dir.mkdir(parents=True, exist_ok=True)
@@ -56,7 +61,9 @@ class IoHandler:
 
     def export_theoretical_database(self, database: Database):
         """
-        Summarize theoretical features into a DataFrame and optionally export it to a tsv file.
+        Summarize theoretical features into a DataFrame and export it to a tsv file.
+
+        :param database: Database object containing theoretical features.
         """
 
         # Create a DataFrame to summarize the theoretical features
@@ -81,10 +88,11 @@ class IoHandler:
                                           index=False)
 
 
-    def targ_export_features(self, features_to_export, sample_name = None):
+    def targ_export_features(self, features_to_export:dict, sample_name:str = None):
         """
-        Summarize and export annotated features into a DataFrame and export it to a tsv file.
-        
+        Summarize annotated features into a DataFrame and export it to a tsv file.
+
+        :param features_to_export: dict containing features to export
         :param sample_name: Name of the sample to filter the DataFrame by, if provided
         """
 
@@ -117,9 +125,11 @@ class IoHandler:
 
         # return df
 
-    def targ_export_clusters(self, features, clusters_to_export, sample_name = None):
+    def targ_export_clusters(self, features:dict, clusters_to_export:dict, sample_name:str = None):
         """
         Summarize annotated clusters into a DataFrame and export it to a tsv file.
+
+        :param features: dict containing features
         :param clusters_to_export: dict containing clusters to export
         :param sample_name: Name of the sample to filter the DataFrame by, if provided
         """
@@ -167,9 +177,10 @@ class IoHandler:
 
         # return df
     
-    def clusters_summary(self, clusters_to_summarize):
+    def clusters_summary(self, clusters_to_summarize:dict):
         """
         Export a tsv file with a summary of the clusters
+
         :param clusters_to_summarize: dict containing clusters to summarize
         :return: pd.DataFrame with the summary of the clusters
         """
@@ -201,9 +212,11 @@ class IoHandler:
 
         # return df
 
-    def untarg_export_features(self, features_to_export):
+    def untarg_export_features(self, features_to_export:dict):
         """
-        Export all features to a TSV file (Untargeted case).
+        Export all features to a TSV file.
+
+        :param features_to_export: dict containing features to export
         
         """
         records = []
@@ -226,7 +239,7 @@ class IoHandler:
         df = pd.DataFrame(records)
         df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
 
-    def untarg_export_clusters(self, cluster_to_export):
+    def untarg_export_clusters(self, cluster_to_export:dict):
         """
         Convert the clusters into a pandas DataFrame for easier analysis and export (Untargeted case).
 

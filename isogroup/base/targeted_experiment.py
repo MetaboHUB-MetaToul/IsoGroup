@@ -14,18 +14,19 @@ class TargetedExperiment(Experiment):
     Used to group and annotate detected features from an experimental dataset using a reference database with isotopic tracer information.
     """
 
-    def __init__(self, dataset, tracer:str, mz_tol:float, rt_tol:float, database:pd.Dataframe):
+    def __init__(self, dataset:pd.DataFrame, tracer:str, ppm_tol:float, rt_tol:float, database:pd.DataFrame):
         """
+        :param dataset: DataFrame containing experimental data with columns for m/z, retention time (RT), feature ID and sample intensities.
         :param tracer: Tracer code used in the experiment (e.g. "13C").
-        :param mz_tol: m/z tolerance in ppm.
-        :param rt_tol: Retention time tolerance in seconds.
+        :param ppm_tol: m/z tolerance (in ppm).
+        :param rt_tol: Retention time tolerance (in seconds).
         :param database: DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
         """
-        super().__init__(dataset = dataset, tracer=tracer, mz_tol=mz_tol, rt_tol=rt_tol, database=database)
+        super().__init__(dataset = dataset, tracer=tracer, ppm_tol=ppm_tol, rt_tol=rt_tol, database=database)
         self.database = Database(dataset=database, 
                                  tracer=self._tracer,
                                  tracer_element=self.tracer_element)
-        # self.mz_tol = mz_tol
+        # self.ppm_tol = ppm_tol
         # self.rt_tol = rt_tol
 
         # self.tracer = tracer
@@ -71,7 +72,7 @@ class TargetedExperiment(Experiment):
                     mz_error = (mz_error / feature.mz) * 1e6
 
                     # Check if the experimental feature is within tolerance
-                    if abs(mz_error) <= self.mz_tol and abs(rt_error) <= self.rt_tol:
+                    if abs(mz_error) <= self.ppm_tol and abs(rt_error) <= self.rt_tol:
                         feature.chemical.append(db_feature.chemical[0])
                         # feature.isotopologue.append(db_feature.isotopologue[0])
                         feature.cluster_isotopologue[db_feature.chemical[0].label] = db_feature.cluster_isotopologue[db_feature.chemical[0].label]
@@ -132,11 +133,13 @@ class TargetedExperiment(Experiment):
         
         logger.info(f"    => {len(cluster_names)} clusters identified.\n")
     
-    def get_features_from_name(self, name, sample_name:str):
+    def get_features_from_name(self, name:str, sample_name:str):
         """
         Retrieve all features in a given sample that are annotated with a specific metabolite name.
-        :param name: Name of the metabolite to retrieve features for
-        :param sample_name: Name of the sample to retrieve features from
+
+        :param name: Name of the metabolite for which to retrieve features
+        :param sample_name: Name of the sample from which to retrieve features
+
         :return: List of Feature objects that match the metabolite name in the specified sample
         """
         features = []
@@ -148,8 +151,10 @@ class TargetedExperiment(Experiment):
     def get_clusters_from_name(self, name, sample_name:str):
         """
         Get a cluster from the experiment by its name, in a given sample if provided
+
         :param name: Name of the cluster to retrieve
         :param sample_name: Name of the sample to retrieve the cluster from
+
         :return: Cluster object if found, None otherwise
         """
         for cluster in self.clusters[sample_name].values():
@@ -167,6 +172,9 @@ class TargetedExperiment(Experiment):
 #     experiment = TargetedExperiment(data, tracer="13C", mz_tol=5, rt_tol=15, database=database)
     
 #     experiment.run_targeted_pipeline()
+#     for sample, clusters in experiment.clusters.items():
+#         for cluster in clusters.values():
+#             print(cluster.expected_isotopologues_in_cluster)
     
 ###############################################################################
         # @property
