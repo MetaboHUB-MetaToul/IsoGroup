@@ -169,7 +169,7 @@ def build_parser_untargeted():
     #                     help='keep only the best candidate among overlapping clusters during clustering (default: False)')
     # parser.add_argument("--kr", type=bool, default=True,
     #                     help='keep only the richest cluster among overlapping clusters during clustering (default: True)')
-    parser.add_argument("-k","--keep", type=str, default="All",
+    parser.add_argument("-k","--keep", type=str, default="all",
                         help='strategy to deduplicate overlapping clusters: "longest", "closest_mz", "both", "all". OPTIONAL')
     parser.add_argument("-o", "--output", type=str, required=True,
                         help='path to generate the output files')
