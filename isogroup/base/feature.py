@@ -8,7 +8,7 @@ class Feature:
     It can also have associated chemical information, isotopologues, and other metadata.
     """
 
-    def __init__(self, rt:float, mz:float, tracer:str, intensity:float, feature_id:str, tracer_element = None, formula:list=None, sample:str=None,
+    def __init__(self, rt:float, mz:float, tracer:str, intensity:float, feature_id:str=None, tracer_element = None, formula:list=None, sample:str=None,
                  chemical:list=None, metabolite:list=None, mz_error:list=None, rt_error: list|None=None, **extra_dims:dict):
         """
         :param rt: Retention time tolerance (in sec).

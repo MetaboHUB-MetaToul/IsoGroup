@@ -283,7 +283,7 @@ class UntargetedExperiment(Experiment):
         #             print(f"         => Removing candidate {f.feature_id} for isotopologue {index} in cluster {cluster.cluster_id}") 
         # print(f"      => {len(f.feature_id)} candidate(s) removed in {len(cluster.cluster_id)} cluster(s).")        
         
-    def deduplicate_clusters(self, keep:str):
+    def deduplicate_clusters(self, keep:str=None):
         """
         Clean up and deduplicate clusters by :
         - Merging clusters with identical feature compositions.
