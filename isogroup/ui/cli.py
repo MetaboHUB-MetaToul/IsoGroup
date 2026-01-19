@@ -154,15 +154,15 @@ def build_parser_targeted():
 def build_parser_untargeted():
     parser = argparse.ArgumentParser(
         prog='isogroup_untargeted',
-        description='Clustering of isotopic datasets',
+        description='Grouping of isotopic datasets',
     )
     parser.add_argument("inputdata", help="input dataset file")
     parser.add_argument("-t", "--tracer", type=str, required=True,
                         help='the isotopic tracer (e.g. "13C")')
     parser.add_argument("-ppm", "--ppm_tol", type=float, required=True,
-                        help='m/z tolerance in ppm for clustering (e.g. "5")')
+                        help='m/z tolerance in ppm for grouping (e.g. "5")')
     parser.add_argument("-rt","--rt_tol", type=float, required=True,
-                        help='rt tolerance in sec for clustering (e.g. "10")')
+                        help='rt tolerance in sec for grouping (e.g. "10")')
     parser.add_argument("--max_atoms", type=int, default=None,
                         help='maximum number of tracer atoms in a molecule (e.g. "20"). OPTIONAL')
     # parser.add_argument("--kbc", type=bool, default=False,
