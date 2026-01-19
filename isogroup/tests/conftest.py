@@ -8,6 +8,9 @@ import pandas as pd
 
 @pytest.fixture
 def dataset_df():
+    """
+    Dataset for testing IsoGroup (Targeted and Untargeted experiment)
+    """
     return pd.DataFrame(
         {'id': ['F1', 'F2', 'F3',  'F4',  'F5', 'F6', 'F7', 'F8', 'F9'], 
          'mz': [119.025753, 120.0291332, 191.0191775654, 119.0232843, 137.0275004, 136.024129, 135.0208168, 134.0174803, 133.0140851], 
@@ -18,6 +21,9 @@ def dataset_df():
 
 @pytest.fixture
 def database_df():
+    """
+    Database for testing IsoGroup (Targeted experiment)
+    """
     return pd.DataFrame(
         {'metabolite': ['Fumarate', 'Succinate', 'Citrate', 'Isocitrate', 'Malate', 'a-KG', 'G6P', 'ADP'], 
          'rt': [979, 668, 680, 680, 676, 883, 890, 2050], 
