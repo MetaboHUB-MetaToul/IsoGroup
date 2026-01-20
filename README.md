@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/IsoGroup.svg)](https://badge.fury.io/py/IsoGroup)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/isogroup.svg)](https://pypi.python.org/pypi/isogroup/)
-[![Documentation Status](https://readthedocs.org/projects/isocor/badge/?version=latest)](http://isocor.readthedocs.io/?badge=latest) -->
+[![Documentation Status](https://readthedocs.org/projects/isocor/badge/?version=latest)](http://isocor.readthedocs.io/?badge=latest)
 
 
 ## What is IsoGroup?
