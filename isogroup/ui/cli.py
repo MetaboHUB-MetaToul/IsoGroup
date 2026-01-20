@@ -61,7 +61,7 @@ def targeted_process(args):
     targeted_experiment= TargetedExperiment(
         dataset=dataset,
         tracer=args.tracer,
-        mz_tol=args.ppm_tol,
+        ppm_tol=args.ppm_tol,
         rt_tol=args.rt_tol,
         database=database)
     
@@ -106,7 +106,7 @@ def untargeted_process(args):
     untargeted_experiment= UntargetedExperiment(
         dataset=dataset,
         tracer=args.tracer,
-        mz_tol=args.ppm_tol,
+        ppm_tol=args.ppm_tol,
         rt_tol=args.rt_tol,
         max_atoms=args.max_atoms,
         keep=args.keep)
