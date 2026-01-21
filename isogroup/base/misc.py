@@ -3,13 +3,15 @@ import re
 from isocor.base import LabelledChemical
 
 class Misc:
+    """
+    Miscellaneous utility functions for isotope labelling analysis.
+    """
 
     @staticmethod
-    def _parse_strtracer(str_tracer):
+    def _parse_strtracer(str_tracer:str) -> tuple[str, int]:
         """Parse the tracer code.
 
-        Args:
-            str_tracer (str): tracer code (e.g. "13C")
+        :param str_tracer: tracer code (e.g. "13C")
 
         Returns:
             tuple
@@ -38,13 +40,11 @@ class Misc:
     
 
     @staticmethod
-    def get_atomic_mass(element: str) -> float|None:
+    def get_atomic_mass(element: str) -> float | None:
         """
         Returns the atomic mass of the given element.
-        Args:
-            element (str): Chemical element symbol (e.g. "C", "H", "N", "O").
-        Returns:
-            float|None: Atomic mass of the element, or None if the element is not found
+            
+        :param element: Chemical element symbol (e.g. "C", "H", "N", "O").
         """
         if element in LabelledChemical.DEFAULT_ISODATA:
             return LabelledChemical.DEFAULT_ISODATA[element]["mass"][0]
@@ -55,10 +55,8 @@ class Misc:
     def calculate_mzshift(tracer: str) -> float:
         """
         Calculate the m/z shift for a given tracer (e.g. "13C").
-        Args:
-            tracer (str): Tracer code (e.g. "13C").
-        Returns:
-            float: m/z shift corresponding to the tracer.
+
+        :param tracer: Tracer code (e.g. "13C").
         """
         tracer_element, tracer_idx = Misc._parse_strtracer(tracer)
 
@@ -77,12 +75,8 @@ class Misc:
         Returns the maximum number of isotopologues to consider based on the m/z value.
         This is a placeholder function and should be replaced with actual logic as needed.
         
-        Args:
-            mz (float): Mass-to-charge ratio of the feature.
-            tracer_element (str): Tracer element symbol (e.g. "C", "N").
-        
-        Returns:
-            int: Maximum number of isotopologues to consider.
+        :param mz: Mass-to-charge ratio of the feature.
+        :param tracer_element: Tracer element symbol (e.g. "C", "N").
         """
         element_mass = float(Misc.get_atomic_mass(tracer_element))
         if element_mass is None:
@@ -96,3 +90,13 @@ class Misc:
         else:
             raise NotImplementedError(f"Tracer {tracer_element} not implemented yet.")
         return max(1, int(factor * (mz / element_mass)))
+
+    def calculate_isotopologue_index(candidate_mz:float, base_mz:float, mzshift_tracer:float) -> int:
+        """
+        Calculate the theoretical isotopologue index based on m/z values.
+
+        :param candidate_mz: m/z of the candidate isotopologue.
+        :param base_mz: m/z of the base (unlabeled) feature.
+        :param mzshift_tracer: m/z shift corresponding to the tracer.
+        """
+        return round((candidate_mz - base_mz) / mzshift_tracer)
