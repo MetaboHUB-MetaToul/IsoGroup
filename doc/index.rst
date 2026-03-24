@@ -18,7 +18,7 @@ The output of IsoGroup is a list of isotopic clusters with their m/z, retention 
 
 The code is open-source, and available on `GitHub <https://github.com/MetaboHUB-MetaToul/IsoGroup>`_ under a :ref:`GPLv3 license <license>`.
 
-This documentation is available on Read the Docs (`https://isogroup.readthedocs.io <https://isogroup.readthedocs.io/>`_) and can be downloaded as a `PDF file <https://readthedocs.org/projects/isocor/downloads/pdf/latest/>`_.
+This documentation is available on Read the Docs (`https://isogroup.readthedocs.io <https://isogroup.readthedocs.io/>`_) and can be downloaded as a `PDF file <https://readthedocs.org/projects/isogroup/downloads/pdf/latest/>`_.
 
 
 .. rubric:: Key features
