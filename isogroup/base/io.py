@@ -1,6 +1,3 @@
-# TODO : Refactor all export methods
-
-from isogroup.base.database import Database
 import pandas as pd
 from pathlib import Path
 
@@ -59,124 +56,34 @@ class IoHandler:
         
         # logging.info(f"Results will be saved to: {self.outputs_path}")
 
-    def export_theoretical_database(self, database: Database):
+    def export_theoretical_database(self, database: pd.DataFrame):
         """
         Summarize theoretical features into a DataFrame and export it to a tsv file.
 
         :param database: Database object containing theoretical features.
         """
 
-        # Create a DataFrame to summarize the theoretical features
-        feature_data = {
-            "mz": [],
-            "rt": [],
-            "metabolite": [],
-            "isotopologue": [],
-            "formula": []
-        }
-        for feature in database.theoretical_features:
-            feature_data["mz"].append(feature.mz)
-            feature_data["rt"].append(feature.rt)
-            feature_data["metabolite"].append(', '.join(feature.metabolite))
-            # feature_data["isotopologue"].append(', '.join(map(str, feature.isotopologue)))
-            for metabolite in feature.metabolite:
-                feature_data["isotopologue"].append(feature.cluster_isotopologue[metabolite])
-            feature_data["formula"].append(feature.formula)
+        # # Create a DataFrame to summarize the theoretical features
+        # feature_data = {
+        #     "mz": [],
+        #     "rt": [],
+        #     "metabolite": [],
+        #     "isotopologue": [],
+        #     "formula": []
+        # }
+        # for feature in database.theoretical_features:
+        #     feature_data["mz"].append(feature.mz)
+        #     feature_data["rt"].append(feature.rt)
+        #     feature_data["metabolite"].append(', '.join(feature.metabolite))
+        #     # feature_data["isotopologue"].append(', '.join(map(str, feature.isotopologue)))
+        #     for metabolite in feature.metabolite:
+        #         feature_data["isotopologue"].append(feature.cluster_isotopologue[metabolite])
+        #     feature_data["formula"].append(feature.formula)
        
-        pd.DataFrame.from_dict(feature_data).to_csv(Path(f"{self.outputs_path}/{self.dataset_name}.theoretical_db.tsv"), 
+        database.to_csv(Path(f"{self.outputs_path}/{self.dataset_name}.theoretical_db.tsv"), 
                                           sep="\t", 
                                           index=False)
 
-
-    def targ_export_features(self, features_to_export:dict, sample_name:str = None):
-        """
-        Summarize annotated features into a DataFrame and export it to a tsv file.
-
-        :param features_to_export: dict containing features to export
-        :param sample_name: Name of the sample to filter the DataFrame by, if provided
-        """
-
-        # Create a DataFrame to summarize the experimental features
-        feature_data = []
-        for sample in features_to_export.values():
-            for feature in sample.values():
-                feature_data.append({
-                    "feature_id": feature.feature_id,
-                    "mz": feature.mz,
-                    "rt": feature.rt,
-                    "metabolite": feature.metabolite,
-                    # "isotopologue": feature.isotopologue,
-                    "isotopologue": [feature.cluster_isotopologue[met] for met in feature.metabolite],
-                    "mz_error": feature.mz_error,
-                    "rt_error": feature.rt_error,
-                    "sample": feature.sample,
-                    "intensity": feature.intensity
-                })
-
-        # Create a DataFrame to summarize the annotated data
-        df = pd.DataFrame(feature_data)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
-
-        # Export the Dataframe of only one sample if a sample name is provided
-        if sample_name:
-            df = df[df["sample"] == sample_name] # Filter the DataFrame by sample name
-            df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
-        
-
-        # return df
-
-    def targ_export_clusters(self, features:dict, clusters_to_export:dict, sample_name:str = None):
-        """
-        Summarize annotated clusters into a DataFrame and export it to a tsv file.
-
-        :param features: dict containing features
-        :param clusters_to_export: dict containing clusters to export
-        :param sample_name: Name of the sample to filter the DataFrame by, if provided
-        """
-        
-        # Check if the sample name is in the DataFrame
-        all_samples = list(features.keys())
-        if sample_name is not None:
-            if sample_name not in all_samples:
-                raise ValueError(f"Sample {sample_name} not found in annotated clusters. Available samples: {', '.join(all_samples)}")
-        
-        cluster_data = []
-        for sample, clusters in clusters_to_export.items():
-            if sample_name is None or sample_name == sample: # Filter the DataFrame by sample name if provided
-                for cname, cluster in clusters.items():
-                    for feature in cluster.features:
-                        idx = [i for i,j in enumerate(feature.metabolite) if j == cname][0]
-                        # Get the cluster_id of the features in another cluster
-                        other_clusters = [c.cluster_id for cluster_name, c in clusters.items() if feature in c.features and c.cluster_id != cluster.cluster_id]
-                        cluster_data.append({
-                            "cluster_id": cluster.cluster_id,
-                            "metabolite": cluster.name,
-                            "feature_id": feature.feature_id,
-                            "mz": feature.mz,
-                            "rt": feature.rt,
-                            "feature_potential_metabolite": feature.metabolite,
-                            # "isotopologue": feature.isotopologue[idx],
-                            "isotopologue": feature.cluster_isotopologue[cluster.name],
-                            "mz_error": feature.mz_error[idx],
-                            "rt_error": feature.rt_error[idx],
-                            "sample": feature.sample,
-                            "intensity": feature.intensity,
-                            "status": cluster.status,
-                            "missing_isotopologue": cluster.missing_isotopologues,
-                            "duplicated_isotopologue": cluster.duplicated_isotopologues,
-                            # "in_cluster": feature.in_cluster,
-                            "in_another_cluster": other_clusters
-                        })
-
-        # Create a DataFrame to summarize the annotated clusters
-        df = pd.DataFrame(cluster_data)
-
-        # Export the DataFrame to a tsv file if a filename is provided
-        # if filename:
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.clusters.tsv", sep="\t", index=False)
-
-        # return df
-    
     def clusters_summary(self, clusters_to_summarize:dict):
         """
         Export a tsv file with a summary of the clusters
@@ -212,62 +119,107 @@ class IoHandler:
 
         # return df
 
-    def untarg_export_features(self, features_to_export:dict):
+    def export_features(self, dataframe_to_export:pd.DataFrame):
         """
         Export all features to a TSV file.
 
         :param features_to_export: dict containing features to export
         
         """
-        records = []
-        for _, features in features_to_export.items():
-            for f in features.values():
-                # If not in any cluster, mark accordingly
-                cluster_ids = f.in_cluster if f.in_cluster else ["None"]
-                # iso_labels = [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
+        dataframe_to_export.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
 
-                records.append({
-                    "FeatureID": f.feature_id,
-                    "RT": f.rt,
-                    "m/z": f.mz,
-                    "sample": f.sample,
-                    "Intensity": f.intensity,
-                    "InClusters": cluster_ids,
-                    "Isotopologues": [f.cluster_isotopologue.get(cid, "N/A") for cid in cluster_ids]
-                })
-
-        df = pd.DataFrame(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
-
-    def untarg_export_clusters(self, cluster_to_export:dict):
+    def export_clusters(self, dataframe_to_export:pd.DataFrame):
         """
         Convert the clusters into a pandas DataFrame for easier analysis and export (Untargeted case).
 
         :param cluster_to_export: dict containing clusters to export
         """
-        records = []
-        for _, clusters in cluster_to_export.items():
-            for cluster in clusters.values():
-                sorted_features = sorted(cluster.features, key=lambda f: f.mz)
-
-                for _, f in enumerate(sorted_features):
-                    # iso_label = f.cluster_isotopologue.get(cluster.cluster_id, "Mx")
-                    records.append({
-                        "ClusterID": cluster.cluster_id,
-                        "FeatureID": f.feature_id,
-                        "RT": f.rt,
-                        "m/z": f.mz,
-                        "sample": f.sample,
-                        "Intensity": f.intensity,
-                        "Isotopologue": f.cluster_isotopologue[cluster.cluster_id],
-                        # "InClusters": f.in_cluster,
-                        "AlsoIn": f.also_in[cluster.cluster_id]
-                    })
-
-        df = pd.DataFrame(records)
-        df.to_csv(f"{self.outputs_path}/{self.dataset_name}.clusters.tsv", sep="\t", index=False)
+        dataframe_to_export.to_csv(f"{self.outputs_path}/{self.dataset_name}.clusters.tsv", sep="\t", index=False)
         # return pd.DataFrame.from_records(records)
 
+    # def targ_export_features(self, features_to_export:dict, sample_name:str = None):
+    #     """
+    #     Summarize annotated features into a DataFrame and export it to a tsv file.
+
+    #     :param features_to_export: dict containing features to export
+    #     :param sample_name: Name of the sample to filter the DataFrame by, if provided
+    #     """
+
+    #     # Create a DataFrame to summarize the experimental features
+    #     feature_data = []
+    #     for sample in features_to_export.values():
+    #         for feature in sample.values():
+    #             feature_data.append({
+    #                 "feature_id": feature.feature_id,
+    #                 "mz": feature.mz,
+    #                 "rt": feature.rt,
+    #                 "metabolite": feature.metabolite,
+    #                 # "isotopologue": feature.isotopologue,
+    #                 "isotopologue": [feature.cluster_isotopologue[met] for met in feature.metabolite],
+    #                 "mz_error": feature.mz_error,
+    #                 "rt_error": feature.rt_error,
+    #                 "sample": feature.sample,
+    #                 "intensity": feature.intensity
+    #             })
+
+    #     # Create a DataFrame to summarize the annotated data
+    #     df = pd.DataFrame(feature_data)
+    #     df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
+
+    #     # Export the Dataframe of only one sample if a sample name is provided
+    #     if sample_name:
+    #         df = df[df["sample"] == sample_name] # Filter the DataFrame by sample name
+    #         df.to_csv(f"{self.outputs_path}/{self.dataset_name}.features.tsv", sep="\t", index=False)
+        
+
+        # return df
+
+    # def targ_export_clusters(self, features:dict, clusters_to_export:dict, sample_name:str = None):
+  
+    #     # Check if the sample name is in the DataFrame
+    #     all_samples = list(features.keys())
+    #     if sample_name is not None:
+    #         if sample_name not in all_samples:
+    #             raise ValueError(f"Sample {sample_name} not found in annotated clusters. Available samples: {', '.join(all_samples)}")
+        
+    #     cluster_data = []
+    #     for sample, clusters in clusters_to_export.items():
+    #         if sample_name is None or sample_name == sample: # Filter the DataFrame by sample name if provided
+    #             for cname, cluster in clusters.items():
+    #                 for feature in cluster.features:
+    #                     idx = [i for i,j in enumerate(feature.metabolite) if j == cname][0]
+    #                     # Get the cluster_id of the features in another cluster
+    #                     other_clusters = [c.cluster_id for cluster_name, c in clusters.items() if feature in c.features and c.cluster_id != cluster.cluster_id]
+    #                     cluster_data.append({
+    #                         "cluster_id": cluster.cluster_id,
+    #                         "metabolite": cluster.name,
+    #                         "feature_id": feature.feature_id,
+    #                         "mz": feature.mz,
+    #                         "rt": feature.rt,
+    #                         "feature_potential_metabolite": feature.metabolite,
+    #                         # "isotopologue": feature.isotopologue[idx],
+    #                         "isotopologue": feature.cluster_isotopologue[cluster.name],
+    #                         "mz_error": feature.mz_error[idx],
+    #                         "rt_error": feature.rt_error[idx],
+    #                         "sample": feature.sample,
+    #                         "intensity": feature.intensity,
+    #                         "status": cluster.status,
+    #                         "missing_isotopologue": cluster.missing_isotopologues,
+    #                         "duplicated_isotopologue": cluster.duplicated_isotopologues,
+    #                         # "in_cluster": feature.in_cluster,
+    #                         "in_another_cluster": other_clusters
+    #                     })
+
+    #     # Create a DataFrame to summarize the annotated clusters
+    #     df = pd.DataFrame(cluster_data)
+
+    #     # Export the DataFrame to a tsv file if a filename is provided
+    #     # if filename:
+    #     df.to_csv(f"{self.outputs_path}/{self.dataset_name}.clusters.tsv", sep="\t", index=False)
+
+    #     # return df
+    
+   
 
     # def export_clusters_to_tsv(self, filepath: str):
     #     """
