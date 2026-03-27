@@ -70,12 +70,14 @@ def targeted_process(args):
     _logger.info(f"  RT tolerance (sec) = {args.rt_tol}\n")
 
 
-    io.export_theoretical_database(targeted_experiment.database)
+    io.export_theoretical_database(targeted_experiment.database.theoretical_database_df)
 
     targeted_experiment.run_targeted_pipeline()
     
-    io.targ_export_features(targeted_experiment.features)
-    io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
+    # io.targ_export_features(targeted_experiment.features)
+    # io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
+    io.export_features(targeted_experiment.all_features_df)
+    io.export_clusters(targeted_experiment.all_clusters_df)
     io.clusters_summary(targeted_experiment.clusters)
     _logger.info(f"Path to results files = {io.outputs_path}")
 
@@ -122,8 +124,10 @@ def untargeted_process(args):
     #     keep_richest=args.kr,)
     untargeted_experiment.run_untargeted_pipeline()
     
-    io.untarg_export_features(untargeted_experiment.features)
-    io.untarg_export_clusters(untargeted_experiment.clusters)
+    # io.untarg_export_features(untargeted_experiment.features)
+    # io.untarg_export_clusters(untargeted_experiment.clusters)
+    io.export_features(untargeted_experiment.all_features_df)
+    io.export_clusters(untargeted_experiment.all_clusters_df)
     _logger.info(f"Path to results files = {io.outputs_path}")
 
 # -------------------
@@ -191,8 +195,6 @@ def main_untargeted():
     args = parser.parse_args()
     args.func(args)
 
-
-# TODO: Homogeneize the output files
 
 # -------------------
 # Old Targeted processing
