@@ -46,6 +46,9 @@ class UntargetedExperiment(Experiment):
 
         self.unclustered_features = {}  # {sample_name: [Feature objects]}
         self.subsets_removed = None 
+        
+        self.all_features_df = None
+        self.all_clusters_df = None
         # --- Set up logging ---
         # self.log_file = log_file
         # logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -85,6 +88,8 @@ class UntargetedExperiment(Experiment):
         # print(f" done ({clusters_count} clusters per sample)")
         # --- Deduplication and cleaning of clusters ---
         self.deduplicate_clusters(self.keep)
+        self.create_features_df()
+        self.create_clusters_df()
         # print(" Cleaning clusters...", end=" ", flush=True)
         # t0 = time.time()
         # merged, subset_removed, final, unclustered = self.deduplicate_clusters(keep_best_candidate=keep_best_candidate, keep_richest=keep_richest)
@@ -124,14 +129,13 @@ class UntargetedExperiment(Experiment):
         #         for key, value in summary:
         #             f.write(f"{key}: {value}\n")
 
-
     def build_clusters(self, rt_tol: float, ppm_tol: float, max_atoms: int = None):
         """
         Group features into potential isotopologue clusters based on retention time proximity and m/z differences.
         :param rt_tol: Retention time window for clustering.
         :param ppm_tol: m/z tolerance in parts per million for clustering.
         :param max_atoms: Maximum number of tracer atoms to consider for isotopologues. If None, IsoGroup automatically estimates 
-                        the maximum number of isotopologues based on the feature m/z and tracer element.
+        the maximum number of isotopologues based on the feature m/z and tracer element.
         """
         # self._rt_tol = rt_tol
         # self._ppm_tol = ppm_tol
@@ -370,23 +374,61 @@ class UntargetedExperiment(Experiment):
         # unclustered = sum(1 for f in next(iter(self.features.values())).values() if not f.in_cluster) if self.features else 0
 
 
+    def create_features_df(self):
+        """
+        Create and store a dataframe containing all features.
+        """
+        all_features = []
+        for features in self.features.values():
+            for f in features.values():
+
+                all_features.append({
+                    "FeatureID": f.feature_id,
+                    "RT": f.rt,
+                    "m/z": f.mz,
+                    "sample": f.sample,
+                    "Intensity": f.intensity,
+                    "InClusters": f.in_cluster if f.in_cluster else ["None"],
+                    "Isotopologues": [f.cluster_isotopologue.get(cid, "N/A") for cid in f.in_cluster] if f.in_cluster else ["N/A"],
+                })
+
+        self.all_features_df = pd.DataFrame(all_features)
+        
+
+    def create_clusters_df(self):
+        """
+        Create and store a dataframe containing all clusters.
+        """
+        all_clusters = []
+        for clusters in self.clusters.values():
+            for cluster in clusters.values():
+                sorted_features = sorted(cluster.features, key=lambda f: f.mz)
+
+                for f in sorted_features:
+                    # iso_label = f.cluster_isotopologue.get(cluster.cluster_id, "Mx")
+                    all_clusters.append({
+                        "ClusterID": cluster.cluster_id,
+                        "FeatureID": f.feature_id,
+                        "RT": f.rt,
+                        "m/z": f.mz,
+                        "sample": f.sample,
+                        "Intensity": f.intensity,
+                        "Isotopologue": f.cluster_isotopologue[cluster.cluster_id],
+                        # "InClusters": f.in_cluster,
+                        "AlsoIn": f.also_in[cluster.cluster_id]
+                    })
+
+        self.all_clusters_df = pd.DataFrame(all_clusters)
+
+
 # if __name__ == "__main__":
 #     from isogroup.base.io import IoHandler
 #     import pandas as pd
 #     from pathlib import Path
-#     from isogroup.base.database import Database
 #     io = IoHandler()
-#     data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
-#     # data=pd.DataFrame(
-#     #     {'id': ['F1', 'F2', 'F3',  'F4',  'F5', 'F6', 'F7', 'F8', 'F9'], 
-#     #      'mz': [119.025753, 120.0291332, 191.0191775654, 119.0232843, 137.0275004, 136.024129, 135.0208168, 134.0174803, 133.0140851], 
-#     #      'rt': [667.779067, 667.9255408, 679.9930235, 678.1606593, 676.4604364, 676.5620229, 676.6045604, 676.8898827, 676.8952154], 
-#     #      'Sample_1': [1571414706.0, 1059554882.0, 31398195.78, 0.0, 529223407.9, 2090662547.0, 3105587268.0, 2077278842.0, 543216118.8], 
-#     #      'Sample_2': [266171108.6, 129533534.2, 5324316.124, 0.0, 28994270.58, 97127965.25, 154077393.8, 218743897.0, 155940888.7]}
-#     # )
-#     untargeted = UntargetedExperiment(dataset=data, tracer="13C", mz_tol=5, rt_tol=10)
+#     # data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
+#     untargeted = UntargetedExperiment(dataset=data, tracer="13C", ppm_tol=5, rt_tol=15)
 #     untargeted.run_untargeted_pipeline()
-    
 #     # untargeted.initialize_experimental_features()
 #     # untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
 #     # untargeted.deduplicate_clusters()
