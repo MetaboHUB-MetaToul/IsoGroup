@@ -51,7 +51,8 @@ def calculate_m1_m0_ratio(clusters_df:pd.DataFrame, sample_name):
     ratio = (numerateur.div(denominateur)).rename(new_col)
     
     sample_subset = sample_subset.join(ratio, on="ClusterID")
-    
+
+    sample_subset[new_col] = sample_subset[new_col].astype(object)
     sample_subset.loc[sample_subset[new_col].isna() | (sample_subset[new_col] == 0), new_col] = "ND"
     clusters_df = clusters_df.merge(sample_subset[new_col], left_index=True, right_index=True, how="left").drop_duplicates()
 
