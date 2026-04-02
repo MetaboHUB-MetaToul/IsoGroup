@@ -111,7 +111,9 @@ def untargeted_process(args):
         ppm_tol=args.ppm_tol,
         rt_tol=args.rt_tol,
         max_atoms=args.max_atoms,
-        keep=args.keep)
+        keep=args.keep,
+        sample_name=args.sample_name,
+        sample_type=args.sample_type)
     
     _logger.info(f"  Tracer = {args.tracer}")
     _logger.info(f"  ppm tolerance (ppm) = {args.ppm_tol}")
@@ -122,7 +124,7 @@ def untargeted_process(args):
     #     verbose=args.verbose,
     #     keep_best_candidate=args.kbc,
     #     keep_richest=args.kr,)
-    untargeted_experiment.run_untargeted_pipeline()
+    untargeted_experiment.run_untargeted_pipeline(args.enhancing)
     
     # io.untarg_export_features(untargeted_experiment.features)
     # io.untarg_export_clusters(untargeted_experiment.clusters)
@@ -179,6 +181,13 @@ def build_parser_untargeted():
                         help='path to generate the output files')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help='enable verbose logging')
+    
+    parser.add_argument("-sn", "--sample_name", type=str, default=None,
+                        help="sample name (if enhancing)")
+    parser.add_argument("-st", "--sample_type", type=str, default=None,
+                        help="sample type (if enhancing)")
+    parser.add_argument("-e", "--enhancing", action="store_true",
+                        help="option for enhancing annotation ")
     parser.set_defaults(func=untargeted_process)
     return parser
 
