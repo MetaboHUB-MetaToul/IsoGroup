@@ -111,9 +111,7 @@ def untargeted_process(args):
         ppm_tol=args.ppm_tol,
         rt_tol=args.rt_tol,
         max_atoms=args.max_atoms,
-        keep=args.keep,
-        sample_name=args.sample_name,
-        sample_type=args.sample_type)
+        keep=args.keep)
     
     _logger.info(f"  Tracer = {args.tracer}")
     _logger.info(f"  ppm tolerance (ppm) = {args.ppm_tol}")
@@ -124,8 +122,14 @@ def untargeted_process(args):
     #     verbose=args.verbose,
     #     keep_best_candidate=args.kbc,
     #     keep_richest=args.kr,)
-    untargeted_experiment.run_untargeted_pipeline(args.enhancing)
-    
+
+    kwargs = {}
+    if args.unlabeled:
+        kwargs = {"sample_name": args.unlabeled, "enhancing_mode": "unlabeled"}
+    elif args.fully_labeled:
+        kwargs = {"sample_name": args.fully_labeled, "enhancing_mode": "fully_labeled"}
+
+    untargeted_experiment.run_untargeted_pipeline(**kwargs)
     # io.untarg_export_features(untargeted_experiment.features)
     # io.untarg_export_clusters(untargeted_experiment.clusters)
     io.export_features(untargeted_experiment.all_features_df)
