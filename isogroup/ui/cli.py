@@ -182,12 +182,10 @@ def build_parser_untargeted():
     parser.add_argument("-v", "--verbose", action="store_true",
                         help='enable verbose logging')
     
-    parser.add_argument("-sn", "--sample_name", type=str, default=None,
-                        help="sample name (if enhancing)")
-    parser.add_argument("-st", "--sample_type", type=str, default=None,
-                        help="sample type (if enhancing)")
-    parser.add_argument("-e", "--enhancing", action="store_true",
-                        help="option for enhancing annotation ")
+    parser.add_argument("--unlabeled", type=str, default=None,
+                        help="Unlabeled sample name")
+    parser.add_argument("--fully_labeled", type=str, default=None,
+                        help="Fully labeled sample name")
     parser.set_defaults(func=untargeted_process)
     return parser
 
