@@ -1,5 +1,7 @@
 from __future__ import annotations
 from isogroup.base.experiment import Experiment
+import isogroup.enhancer.unlabeled_enhancer as unlabeled_enhancer 
+import isogroup.enhancer.labeled_enhancer as labeled_enhancer
 import bisect
 from collections import defaultdict
 from isogroup.base.cluster import Cluster
@@ -46,6 +48,9 @@ class UntargetedExperiment(Experiment):
 
         self.unclustered_features = {}  # {sample_name: [Feature objects]}
         self.subsets_removed = None 
+        
+        self.all_features_df = None
+        self.all_clusters_df = None
         # --- Set up logging ---
         # self.log_file = log_file
         # logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -53,9 +58,14 @@ class UntargetedExperiment(Experiment):
         # self.logger.info(f"Tracer: {self.tracer}, Tracer element: {self.tracer_element}, m/z shift: {self.mzshift_tracer}")
 
 
-    def run_untargeted_pipeline(self):
+    def run_untargeted_pipeline(self, enhancing_mode=None, sample_name=None,):
         """
         Complete pipeline to build and deduplicate clusters from the dataset with logging and timing.
+
+        :param enhancing_mode: Mode used to enhance the dataset. Accepted values are "unlabeled" 
+                                or "fully labeled". If None, no enhancement is applied. Defaults to None.
+        :param sample_name: name of the sample file to use for enhancement. Required if enhancing_mode 
+                                is specified.
         """
         start_time = time.time()
         # start_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -85,6 +95,13 @@ class UntargetedExperiment(Experiment):
         # print(f" done ({clusters_count} clusters per sample)")
         # --- Deduplication and cleaning of clusters ---
         self.deduplicate_clusters(self.keep)
+        self.create_features_df()
+        self.create_clusters_df()
+
+        if enhancing_mode == "unlabeled":
+           self.unlabeled_enhancer(self.all_clusters_df, sample_name)
+        if enhancing_mode == "fully_labeled":
+            self.fully_labeled_enhancer(self.all_clusters_df, sample_name)
         # print(" Cleaning clusters...", end=" ", flush=True)
         # t0 = time.time()
         # merged, subset_removed, final, unclustered = self.deduplicate_clusters(keep_best_candidate=keep_best_candidate, keep_richest=keep_richest)
@@ -124,14 +141,13 @@ class UntargetedExperiment(Experiment):
         #         for key, value in summary:
         #             f.write(f"{key}: {value}\n")
 
-
     def build_clusters(self, rt_tol: float, ppm_tol: float, max_atoms: int = None):
         """
         Group features into potential isotopologue clusters based on retention time proximity and m/z differences.
         :param rt_tol: Retention time window for clustering.
         :param ppm_tol: m/z tolerance in parts per million for clustering.
         :param max_atoms: Maximum number of tracer atoms to consider for isotopologues. If None, IsoGroup automatically estimates 
-                        the maximum number of isotopologues based on the feature m/z and tracer element.
+        the maximum number of isotopologues based on the feature m/z and tracer element.
         """
         # self._rt_tol = rt_tol
         # self._ppm_tol = ppm_tol
@@ -370,23 +386,78 @@ class UntargetedExperiment(Experiment):
         # unclustered = sum(1 for f in next(iter(self.features.values())).values() if not f.in_cluster) if self.features else 0
 
 
+    def create_features_df(self):
+        """
+        Create and store a dataframe containing all features.
+        """
+        all_features = []
+        for features in self.features.values():
+            for f in features.values():
+
+                all_features.append({
+                    "FeatureID": f.feature_id,
+                    "RT": f.rt,
+                    "m/z": f.mz,
+                    "sample": f.sample,
+                    "Intensity": f.intensity,
+                    "InClusters": f.in_cluster if f.in_cluster else ["None"],
+                    "Isotopologues": [f.cluster_isotopologue.get(cid, "N/A") for cid in f.in_cluster] if f.in_cluster else ["N/A"],
+                })
+
+        self.all_features_df = pd.DataFrame(all_features)      
+
+    def create_clusters_df(self):
+        """
+        Create and store a dataframe containing all clusters.
+        """
+        all_clusters = []
+        for clusters in self.clusters.values():
+            for cluster in clusters.values():
+                sorted_features = sorted(cluster.features, key=lambda f: f.mz)
+
+                for f in sorted_features:
+                    # iso_label = f.cluster_isotopologue.get(cluster.cluster_id, "Mx")
+                    all_clusters.append({
+                        "ClusterID": cluster.cluster_id,
+                        "FeatureID": f.feature_id,
+                        "RT": f.rt,
+                        "m/z": f.mz,
+                        "sample": f.sample,
+                        "Intensity": f.intensity,
+                        "Isotopologue": f.cluster_isotopologue[cluster.cluster_id],
+                        # "InClusters": f.in_cluster,
+                        "AlsoIn": str(f.also_in[cluster.cluster_id])
+                    })
+
+        self.all_clusters_df = pd.DataFrame(all_clusters)
+
+    def unlabeled_enhancer(self, clusters_df, sample_name):
+        """
+        Refine the untargeted pipeline annotations using unlabeled data.
+
+        :param clusters_df: DataFrame containing all clusters generated by the IsoGroup's untargeted mode.
+        :param sample_name: Name of the unlabeled sample use for enhancer.
+        """
+        df_feature_found = unlabeled_enhancer.annotate_feature_found(clusters_df, sample_name)
+        self.all_clusters_df = unlabeled_enhancer.calculate_m1_m0_ratio(df_feature_found, sample_name)
+
+    def fully_labeled_enhancer(self, clusters_df, sample_name):
+        """
+        Refine the untargeted pipeline annotations using fully labeled data.
+
+        :param clusters_df: DataFrame containing all clusters generated by the IsoGroup's untargeted mode.
+        :param sample_name: Name of the fully labeled sample use for enhancer.
+        """
+        self.all_clusters_df = labeled_enhancer.annotate_feature_found(clusters_df, sample_name)
+
 # if __name__ == "__main__":
 #     from isogroup.base.io import IoHandler
 #     import pandas as pd
 #     from pathlib import Path
-#     from isogroup.base.database import Database
 #     io = IoHandler()
-#     data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
-#     # data=pd.DataFrame(
-#     #     {'id': ['F1', 'F2', 'F3',  'F4',  'F5', 'F6', 'F7', 'F8', 'F9'], 
-#     #      'mz': [119.025753, 120.0291332, 191.0191775654, 119.0232843, 137.0275004, 136.024129, 135.0208168, 134.0174803, 133.0140851], 
-#     #      'rt': [667.779067, 667.9255408, 679.9930235, 678.1606593, 676.4604364, 676.5620229, 676.6045604, 676.8898827, 676.8952154], 
-#     #      'Sample_1': [1571414706.0, 1059554882.0, 31398195.78, 0.0, 529223407.9, 2090662547.0, 3105587268.0, 2077278842.0, 543216118.8], 
-#     #      'Sample_2': [266171108.6, 129533534.2, 5324316.124, 0.0, 28994270.58, 97127965.25, 154077393.8, 218743897.0, 155940888.7]}
-#     # )
-#     untargeted = UntargetedExperiment(dataset=data, tracer="13C", mz_tol=5, rt_tol=10)
+#     # data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
+#     untargeted = UntargetedExperiment(dataset=data, tracer="13C", ppm_tol=5, rt_tol=15)
 #     untargeted.run_untargeted_pipeline()
-    
 #     # untargeted.initialize_experimental_features()
 #     # untargeted.build_clusters(RTwindow=15, ppm_tolerance=5)
 #     # untargeted.deduplicate_clusters()

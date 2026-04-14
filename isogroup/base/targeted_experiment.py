@@ -26,6 +26,9 @@ class TargetedExperiment(Experiment):
         self.database = Database(dataset=database, 
                                  tracer=self._tracer,
                                  tracer_element=self.tracer_element)
+        
+        self.all_features_df = None
+        self.all_clusters_df = None
         # self.ppm_tol = ppm_tol
         # self.rt_tol = rt_tol
 
@@ -47,6 +50,9 @@ class TargetedExperiment(Experiment):
         self.initialize_experimental_features()
         self.annotate_features()
         self.clusterize()
+        
+        self.create_features_df()
+        self.create_clusters_df()
 
         total_time = time.time() - start_time
 
@@ -162,19 +168,91 @@ class TargetedExperiment(Experiment):
                 return cluster
         return None
     
+    def create_clusters_df(self): #sample_name = None):
+        """
+        Create and store a dataframe containing all clusters.
+        """
+        # all_samples = list(self.features.keys())
+        # if sample_name is not None:
+        #     if sample_name not in all_samples:
+        #         raise ValueError(f"Sample {sample_name} not found in annotated clusters. Available samples: {', '.join(all_samples)}")
+        
+        cluster_data = []
+        for clusters in self.clusters.values():
+            # if sample_name is None or sample_name == sample: # Filter the DataFrame by sample name if provided
+                # print(clusters.name)
+            # for cname, cluster in clusters.items():
+            for cluster in clusters.values():
+                # print(cluster.name)
+                for feature in cluster.features:
+                    idx = [index for index,metabolite in enumerate(feature.metabolite) if metabolite == cluster.name][0]
+                        # Get the cluster_id of the features in another cluster
+                    # other_clusters = [c.cluster_id for cluster_name, c in clusters.items() if feature in c.features and c.cluster_id != cluster.cluster_id]
+                    # print(other_clusters)
+                    cluster_data.append({
+                        "cluster_id": cluster.cluster_id,
+                        "metabolite": cluster.name,
+                        "feature_id": feature.feature_id,
+                        "mz": feature.mz,
+                        "rt": feature.rt,
+                        "feature_potential_metabolite": feature.metabolite,
+                        # "isotopologue": feature.isotopologue[idx],
+                        "isotopologue": feature.cluster_isotopologue[cluster.name],
+                        "mz_error": feature.mz_error[idx],
+                        "rt_error": feature.rt_error[idx],
+                        "sample": feature.sample,
+                        "intensity": feature.intensity,
+                        "status": cluster.status,
+                        "missing_isotopologue": cluster.missing_isotopologues,
+                        "duplicated_isotopologue": cluster.duplicated_isotopologues,
+                        # "in_cluster": feature.in_cluster,
+                        "in_another_cluster": [c.cluster_id for c in clusters.values() if feature in c.features and c.cluster_id != cluster.cluster_id]
+                    })
+
+        # Create a DataFrame to summarize the annotated clusters
+        self.all_clusters_df= pd.DataFrame(cluster_data)
+    
+    def create_features_df(self):  #sample_name = None):
+        """
+        Create and store a dataframe containing all features.
+        """
+        feature_data = []
+        for all_features in self.features.values():
+            for feature in all_features.values():
+                feature_data.append({
+                    "feature_id": feature.feature_id,
+                    "mz": feature.mz,
+                    "rt": feature.rt,
+                    "metabolite": feature.metabolite,
+                    # "isotopologue": feature.isotopologue,
+                    "isotopologue": [feature.cluster_isotopologue[met] for met in feature.metabolite],
+                    "mz_error": feature.mz_error,
+                    "rt_error": feature.rt_error,
+                    "sample": feature.sample,
+                    "intensity": feature.intensity
+                })
+
+        # Create a DataFrame to summarize the annotated data
+        self.all_features_df = pd.DataFrame(feature_data)
+        
+    
+        # # Export the Dataframe of only one sample if a sample name is provided
+        # if sample_name:
+        #     df = df[df["sample"] == sample_name] # Filter the DataFrame by sample name
+
 # if __name__ == "__main__":
 #     from isogroup.base.io import IoHandler
 #     from isogroup.base.database import Database
 #     from pathlib import Path
 #     io= IoHandler()
-#     data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
-#     database = io.read_database(Path(r"..\..\data\database.csv"))
-#     experiment = TargetedExperiment(data, tracer="13C", mz_tol=5, rt_tol=15, database=database)
+#     # data= io.read_dataset(Path(r"..\..\data\dataset_test_XCMS.txt"))
+#     # database = io.read_database(Path(r"..\..\data\database.csv"))
+
+#     experiment = TargetedExperiment(data, tracer="13C", ppm_tol=5, rt_tol=15, database=database)
     
 #     experiment.run_targeted_pipeline()
-#     for sample, clusters in experiment.clusters.items():
-#         for cluster in clusters.values():
-#             print(cluster.expected_isotopologues_in_cluster)
+#     experiment.clusters_df()
+    
     
 ###############################################################################
         # @property

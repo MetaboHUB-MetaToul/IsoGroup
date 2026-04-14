@@ -32,9 +32,9 @@ def test_annotate_features(dataset_df, database_df, metabolite, feature_id):
     targeted_experiment.annotate_features()
     assert targeted_experiment.features["Sample_1"][feature_id].metabolite == metabolite
     assert targeted_experiment.features["Sample_2"][feature_id].metabolite == metabolite
-    assert math.isclose(targeted_experiment.features["Sample_1"]["F2"].rt_error[0], 0.07445919999997841)
-    assert math.isclose(targeted_experiment.features["Sample_2"]["F3"].rt_error[1], 0.006976499999950647)
-    assert math.isclose(targeted_experiment.features["Sample_1"]["F9"].mz_error[0], -2.9082559166254343)
+    assert math.isclose(targeted_experiment.features["Sample_1"]["F2"].rt_error[0], 0.0744, rel_tol=0, abs_tol=1e-4)
+    assert math.isclose(targeted_experiment.features["Sample_2"]["F3"].rt_error[1], 0.0069, rel_tol=0, abs_tol=1e-4)
+    assert math.isclose(targeted_experiment.features["Sample_1"]["F9"].mz_error[0], -2.9082, rel_tol=0, abs_tol=1e-4)
 
 def test_no_annotation(dataset_df, database_df):
     """

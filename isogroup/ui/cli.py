@@ -70,12 +70,14 @@ def targeted_process(args):
     _logger.info(f"  RT tolerance (sec) = {args.rt_tol}\n")
 
 
-    io.export_theoretical_database(targeted_experiment.database)
+    io.export_theoretical_database(targeted_experiment.database.theoretical_database_df)
 
     targeted_experiment.run_targeted_pipeline()
     
-    io.targ_export_features(targeted_experiment.features)
-    io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
+    # io.targ_export_features(targeted_experiment.features)
+    # io.targ_export_clusters(targeted_experiment.features, targeted_experiment.clusters)
+    io.export_features(targeted_experiment.all_features_df)
+    io.export_clusters(targeted_experiment.all_clusters_df)
     io.clusters_summary(targeted_experiment.clusters)
     _logger.info(f"Path to results files = {io.outputs_path}")
 
@@ -120,10 +122,18 @@ def untargeted_process(args):
     #     verbose=args.verbose,
     #     keep_best_candidate=args.kbc,
     #     keep_richest=args.kr,)
-    untargeted_experiment.run_untargeted_pipeline()
-    
-    io.untarg_export_features(untargeted_experiment.features)
-    io.untarg_export_clusters(untargeted_experiment.clusters)
+
+    kwargs = {}
+    if args.unlabeled:
+        kwargs = {"sample_name": args.unlabeled, "enhancing_mode": "unlabeled"}
+    elif args.fully_labeled:
+        kwargs = {"sample_name": args.fully_labeled, "enhancing_mode": "fully_labeled"}
+
+    untargeted_experiment.run_untargeted_pipeline(**kwargs)
+    # io.untarg_export_features(untargeted_experiment.features)
+    # io.untarg_export_clusters(untargeted_experiment.clusters)
+    io.export_features(untargeted_experiment.all_features_df)
+    io.export_clusters(untargeted_experiment.all_clusters_df)
     _logger.info(f"Path to results files = {io.outputs_path}")
 
 # -------------------
@@ -175,6 +185,11 @@ def build_parser_untargeted():
                         help='path to generate the output files')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help='enable verbose logging')
+    
+    parser.add_argument("--unlabeled", type=str, default=None,
+                        help="Unlabeled sample name")
+    parser.add_argument("--fully_labeled", type=str, default=None,
+                        help="Fully labeled sample name")
     parser.set_defaults(func=untargeted_process)
     return parser
 
@@ -191,8 +206,6 @@ def main_untargeted():
     args = parser.parse_args()
     args.func(args)
 
-
-# TODO: Homogeneize the output files
 
 # -------------------
 # Old Targeted processing

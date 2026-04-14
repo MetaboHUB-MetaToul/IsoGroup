@@ -92,6 +92,12 @@ class Experiment:
         Initialize Feature objects from the dataset and organize them by sample.
         Each feature is created with its retention time, m/z, tracer, intensity, and sample name.
         """
+        if not {"mz", "rt", "id"}.issubset(self.dataset.columns):
+            raise ValueError("Dataset must contain 'mz', 'rt', and 'id' columns.")
+        
+        if not any(col not in {"mz", "rt", "id"} for col in self.dataset.columns):
+            raise ValueError("Dataset must contain at least one sample column with intensity values.")
+
         dataset = self.dataset.set_index(["mz", "rt", "id"])
         
         for idx, _ in dataset.iterrows():
