@@ -67,7 +67,7 @@ def targeted_process(args):
     
     _logger.info(f"  Tracer = {args.tracer}")
     _logger.info(f"  ppm tolerance (ppm) = {args.ppm_tol}")
-    _logger.info(f"  RT tolerance (sec) = {args.rt_tol}\n")
+    _logger.info(f"  RT tolerance = {args.rt_tol}\n")
 
 
     io.export_theoretical_database(targeted_experiment.database.theoretical_database_df)
@@ -115,7 +115,7 @@ def untargeted_process(args):
     
     _logger.info(f"  Tracer = {args.tracer}")
     _logger.info(f"  ppm tolerance (ppm) = {args.ppm_tol}")
-    _logger.info(f"  RT tolerance (sec) = {args.rt_tol}")
+    _logger.info(f"  RT tolerance = {args.rt_tol}")
     _logger.info(f"  Max atoms = {args.max_atoms}\n")
 
     # untargeted_experiment.build_final_clusters(
@@ -153,7 +153,7 @@ def build_parser_targeted():
     parser.add_argument("-ppm", "--ppm_tol", type=float, required=True,
                         help='m/z tolerance in ppm (e.g. "5")')
     parser.add_argument("-rt", "--rt_tol", type=float, required=True,
-                        help='retention time tolerance in sec (e.g. "10")')
+                        help='retention time tolerance (e.g. "10")')
     parser.add_argument("-o", "--output", type=str, required=True,
                         help='path to generate the output files')
     parser.add_argument("-v", "--verbose",
