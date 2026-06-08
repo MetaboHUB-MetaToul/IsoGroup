@@ -19,7 +19,7 @@ class TargetedExperiment(Experiment):
         :param dataset: DataFrame containing experimental data with columns for m/z, retention time (RT), feature ID and sample intensities.
         :param tracer: Tracer code used in the experiment (e.g. "13C").
         :param ppm_tol: m/z tolerance (in ppm).
-        :param rt_tol: Retention time tolerance (in seconds).
+        :param rt_tol: Retention time tolerance.
         :param database: DataFrame containing theoretical features with columns retention time (RT), metabolite names, and formulas.
         """
         super().__init__(dataset = dataset, tracer=tracer, ppm_tol=ppm_tol, rt_tol=rt_tol, database=database)
@@ -88,7 +88,7 @@ class TargetedExperiment(Experiment):
                         feature.rt_error.append(rt_error)
                         nb_features_annotated += 1
                         logger.debug(f"Feature {feature.feature_id} in sample {feature.sample} annotated with {db_feature.chemical[0].label} (isotopologue: {db_feature.cluster_isotopologue[db_feature.chemical[0].label]})")
-                        logger.debug(f" - mz error (ppm): {mz_error}, rt error (sec): {rt_error}")
+                        logger.debug(f" - mz error (ppm): {mz_error}, rt error: {rt_error}")
         
         logger.info(f"    => {nb_features_annotated} experimental features matched with database features.\n")
         
