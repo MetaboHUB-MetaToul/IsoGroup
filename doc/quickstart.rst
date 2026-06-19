@@ -7,7 +7,7 @@ Quick start
 Installation
 ------------------------------------------------
 
-IsoGroup requires Python 3.7 or higher. If you do not have a Python environment
+IsoGroup requires Python 3.10 or higher. If you do not have a Python environment
 configured on your computer, we recommend that you follow the instructions
 from `Anaconda <https://www.anaconda.com/download/>`_.
 
