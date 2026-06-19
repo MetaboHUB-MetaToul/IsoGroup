@@ -47,13 +47,12 @@ The measurement file is a TXT file with one row by feature and the following col
 Grouping parameters
 ********************************************************************************
 
-IsoGroup provides flexible options to adapt to various experimental conditions, such as isotopic tracer, mass accuracy, or data processing quality
+IsoGroup provides flexible options to adapt to various experimental conditions, such as the isotopic tracer used, mass tolerance (ppm), and retention time window.
 
 :Measurements file: Path to the :ref:`Measurements file (untargeted)`.
 :Isotopic tracer: The tracer used for your experiment.
 :ppm tolerance: The mass accuracy allowed for the grouping of isotopologues into isotopic clusters, in ppm (parts per million).
 :rt tolerance: The retention time tolerance for the grouping of isotopologues into isotopic clusters, in seconds.
-:Verbose: If set, the console and the log-file will contain all information necessary to check intermediate results of the annotation process.
 
 Additional optional parameters
 ----------------------------------------------------------------------------------
@@ -77,6 +76,7 @@ IsoGroup also provides additional optional parameters to refine the grouping of 
 :unlabeled: Name of the unlabeled sample used to enhance the annotation of isotopologues. This introduces new columns in the output file indicating whether features are detected in the unlabeled sample, as well as the calculation of the Mx+1/Mx ratio, which can be used as additional criteria for isotopologue annotation.
 
 :fully_labeled: Name of the fully labeled sample used to enhance the annotation of isotopologues. This introduces new columns in the output file indicating whether features are detected in the fully labeled sample, which can be used as an additional criterion for isotopologue annotation.
+:Verbose: If set, the console and the log-file will contain all information necessary to check intermediate results of the annotation process.
 
 
 ..  _`Output data`:
