@@ -124,10 +124,11 @@ def untargeted_process(args):
     #     keep_richest=args.kr,)
 
     kwargs = {}
-    if args.unlabeled:
-        kwargs = {"sample_name": args.unlabeled, "enhancing_mode": "unlabeled"}
-    elif args.fully_labeled:
-        kwargs = {"sample_name": args.fully_labeled, "enhancing_mode": "fully_labeled"}
+    # if args.unlabeled:
+    #     kwargs = {"sample_name": args.unlabeled, "enhancing_mode": "unlabeled"}
+    # elif args.fully_labeled:
+    #     kwargs = {"sample_name": args.fully_labeled, "enhancing_mode": "fully_labeled"}
+    kwargs = {"unlabaled_sample": args.unlabeled, "fully_labeled_sample": args.fully_labeled}
 
     untargeted_experiment.run_untargeted_pipeline(**kwargs)
     # io.untarg_export_features(untargeted_experiment.features)
@@ -172,7 +173,7 @@ def build_parser_untargeted():
     parser.add_argument("-ppm", "--ppm_tol", type=float, required=True,
                         help='m/z tolerance in ppm for grouping (e.g. "5")')
     parser.add_argument("-rt","--rt_tol", type=float, required=True,
-                        help='rt tolerance in sec for grouping (e.g. "10")')
+                        help='rt tolerance for grouping (e.g. "10")')
     parser.add_argument("--max_atoms", type=int, default=None,
                         help='maximum number of tracer atoms in a molecule (e.g. "20"). OPTIONAL')
     # parser.add_argument("--kbc", type=bool, default=False,
@@ -187,9 +188,9 @@ def build_parser_untargeted():
                         help='enable verbose logging')
     
     parser.add_argument("--unlabeled", type=str, default=None,
-                        help="Unlabeled sample name")
+                        help="Unlabeled sample name. OPTIONAL")
     parser.add_argument("--fully_labeled", type=str, default=None,
-                        help="Fully labeled sample name")
+                        help="Fully labeled sample name. OPTIONAL")
     parser.set_defaults(func=untargeted_process)
     return parser
 
