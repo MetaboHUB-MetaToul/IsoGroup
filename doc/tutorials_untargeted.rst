@@ -35,8 +35,8 @@ i.e. the mass-to-charge ratios (m/z), retention times, and intensities of the de
 The measurement file is a TXT file with one row by feature and the following columns:
 
 :id: The feature identifier, as it is referred in the MS data processing software; e.g. "feature_1".
-:mz: The mass-to-charge ratio of the feature, as a float; e.g. "123.456".
-:rt: The retention time of the feature, as a float, in seconds; e.g. "12.34".
+:mz: The mass-to-charge ratio of the feature; e.g. "123.456".
+:rt: The retention time of the feature; e.g. "12.34".
 :sample: The sample name, as it is referred in the MS data processing software; e.g. "Sample_1". The Sample column contains the intensity (or peak area) of the detected feature in the corresponding sample.
 
 :download:`Example file <../data/dataset_test_XCMS.txt>`.
@@ -47,13 +47,12 @@ The measurement file is a TXT file with one row by feature and the following col
 Grouping parameters
 ********************************************************************************
 
-IsoGroup provides flexible options to adapt to various experimental conditions, such as isotopic tracer, mass accuracy, or data processing quality
+IsoGroup provides flexible options to adapt to various experimental conditions, such as the isotopic tracer used, mass tolerance (ppm), and retention time window.
 
 :Measurements file: Path to the :ref:`Measurements file (untargeted)`.
 :Isotopic tracer: The tracer used for your experiment.
 :ppm tolerance: The mass accuracy allowed for the grouping of isotopologues into isotopic clusters, in ppm (parts per million).
-:rt tolerance: The retention time tolerance for the grouping of isotopologues into isotopic clusters, in seconds.
-:Verbose: If set, the console and the log-file will contain all information necessary to check intermediate results of the annotation process.
+:rt tolerance: The retention time tolerance for the grouping of isotopologues into isotopic clusters.
 
 Additional optional parameters
 ----------------------------------------------------------------------------------
@@ -77,6 +76,7 @@ IsoGroup also provides additional optional parameters to refine the grouping of 
 :unlabeled: Name of the unlabeled sample used to enhance the annotation of isotopologues. This introduces new columns in the output file indicating whether features are detected in the unlabeled sample, as well as the calculation of the Mx+1/Mx ratio, which can be used as additional criteria for isotopologue annotation.
 
 :fully_labeled: Name of the fully labeled sample used to enhance the annotation of isotopologues. This introduces new columns in the output file indicating whether features are detected in the fully labeled sample, which can be used as an additional criterion for isotopologue annotation.
+:Verbose: If set, the console and the log-file will contain all information necessary to check intermediate results of the annotation process.
 
 
 ..  _`Output data`:
@@ -95,7 +95,7 @@ Contains a summary of the features included or not in isotopic clusters, with th
 - **RT** - Retention time of the feature, as it was provided in the :ref:`Measurements file (untargeted)`.
 - **m/z** - Mass-to-charge ratio of the feature, as it was provided in the :ref:`Measurements file (untargeted)`.
 - **sample** - Name of the sample, as it was provided in the :ref:`Measurements file (untargeted)`.
-- **intensity** - The intensity of the feature in the sample, as it was provided in the `Measurements file (untargeted)`:
+- **intensity** - The intensity of the feature in the sample, as it was provided in the `Measurements file (untargeted)`.
 - **inClusters** - The cluster identifiers in which the feature is included. If the feature is not included in any cluster, the value is "None".
 - **Isotopologues** - The index of the isotopologues of the metabolite corresponding to the cluster. If the feature is not included in any cluster, the value is "None".
 

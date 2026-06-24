@@ -58,7 +58,7 @@ class UntargetedExperiment(Experiment):
         # self.logger.info(f"Tracer: {self.tracer}, Tracer element: {self.tracer_element}, m/z shift: {self.mzshift_tracer}")
 
 
-    def run_untargeted_pipeline(self, enhancing_mode=None, sample_name=None,):
+    def run_untargeted_pipeline(self, unlabaled_sample=None, fully_labeled_sample=None):
         """
         Complete pipeline to build and deduplicate clusters from the dataset with logging and timing.
 
@@ -98,10 +98,12 @@ class UntargetedExperiment(Experiment):
         self.create_features_df()
         self.create_clusters_df()
 
-        if enhancing_mode == "unlabeled":
-           self.unlabeled_enhancer(self.all_clusters_df, sample_name)
-        if enhancing_mode == "fully_labeled":
-            self.fully_labeled_enhancer(self.all_clusters_df, sample_name)
+        # if enhancing_mode == "unlabeled":
+        if unlabaled_sample:
+           self.unlabeled_enhancer(self.all_clusters_df, unlabaled_sample)
+        # if enhancing_mode == "fully_labeled":
+        if fully_labeled_sample:
+            self.fully_labeled_enhancer(self.all_clusters_df, fully_labeled_sample)
         # print(" Cleaning clusters...", end=" ", flush=True)
         # t0 = time.time()
         # merged, subset_removed, final, unclustered = self.deduplicate_clusters(keep_best_candidate=keep_best_candidate, keep_richest=keep_richest)
