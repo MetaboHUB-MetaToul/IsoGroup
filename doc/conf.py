@@ -212,7 +212,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual], toctree_only).
 latex_documents = [
     ('index', 'isogroup.tex', u'IsoGroup Documentation',
-     "Butin Noémie, Le Grégam Loïc, Millard Pierre", 'manual', False),
+     "Kouakou Rochelle, Butin Noémie, Le Grégam Loïc, Millard Pierre", 'manual', False),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

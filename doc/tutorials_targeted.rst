@@ -32,7 +32,7 @@ Measurements file
 **This file contains the MS features of each sample**,
 i.e. the mass-to-charge ratios (m/z), retention times, and intensities of the detected peaks.
 
-The measurement file is a tab-delimited file with one row by feature and the following columns:
+The measurement file is a TSV file with one row by feature and the following columns:
 
 :id: The feature identifier, as it is referred in the MS data processing software; e.g. "feature_1".
 :mz: The mass-to-charge ratio of the feature; e.g. "123.456".
