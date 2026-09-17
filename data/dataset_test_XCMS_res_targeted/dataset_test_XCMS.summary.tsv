@@ -1,0 +1,6 @@
+ClusterID	Name	Number_of_features	Isotopologues	Status	Missing_isotopologues	Duplicated_isotopologues	number_of_samples
+C0	Succinate	5	[0, 1, 2, 3, 4]	Complete			2
+C1	Malate	3	[0, 3, 4]	Incomplete	[1, 2]		2
+C2	a-KG	1	[4]	Incomplete	[0, 1, 2, 3, 5]		2
+C3	Fumarate	4	[0, 1, 2, 4]	Incomplete	[3]		2
+C4	ADP	7	[0, 1, 5, 6, 7, 8, 9]	Incomplete	[2, 3, 4, 10]		2
